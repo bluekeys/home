@@ -1,0 +1,7 @@
+#+TITLE: Literate Guix Config
+#+PROPERTY: header-args            :noweb no-export :comments both :results silent :mkdirp no 
+#+PROPERTY: header-args:emacs-lisp :tangle /etc/config.scm
+* Guix packages
+#+begin_src shell
+guix install emacs-exwm arandr xrandr
+#+end_src

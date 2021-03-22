@@ -1,0 +1,386 @@
+#+TITLE: Literate EXWM Config
+#+PROPERTY: header-args            :noweb no-export :comments both :results silent :mkdirp no 
+#+PROPERTY: header-args:emacs-lisp :tangle ~/.exwm
+* OS packages
+** Guix
+#+begin_src shell
+guix install emacs-exwm xrandr arandr dunst autorandr
+#+end_src
+* Functions
+** Hooks
+*** EXWM init
+Land on worspace 0 on startup
+#+begin_src emacs-lisp
+  (defun my/exwm-init-hook ()
+                                        ;(my/run-in-background "nm-applet")
+    (exwm-workspace-switch-create 0))
+#+end_src
+** Helpers
+*** Set wallpaper
+Make sure you grab the wallpaper first, also, relies on feh application being installed
+#+begin_src emacs-lisp
+  (defun my/set-wallpaper ()
+    (interactive)
+    (start-process-shell-command
+     "feh" nil "feh --bg-scale ~/Backgrounds/pexels-sebastiaan-stam-1097456.jpg"))
+#+end_src
+*** Run in background
+Handy for not opening 2 buffers for each app
+#+begin_src emacs-lisp
+  (defun my/run-in-background (command)
+    (let ((command-parts (split-string command "[ ]+")))
+      (apply #'call-process `(,(car command-parts) nil 0 nil ,@ (cdr command-parts)))))
+#+end_src
+*** Window class update
+Instead of naming buffers EXWM, rename the buffer to match the window class
+#+begin_src emacs-lisp
+  (defun my/exwm-update-class () (exwm-workspace-rename-buffer exwm-class-name))
+#+end_src
+*** Update window title
+Make some additional changes to buffer names for apps like browsers
+#+begin_src emacs-lisp
+  (defun my/exwm-update-title ()
+    (pcase exwm-class-name
+      ("IceCat" (exwm-workspace-rename-buffer (format "IceCat: %s" exwm-title)))))
+#+end_src
+*** Position a window by co-ordinate
+#+begin_src emacs-lisp
+  (defun my/position-window ()
+    (let* ((pos (frame-position))
+           (pos-x (car pos))
+            (pos-y (cdr pos)))
+
+      (exwm-floating-move (- pos-x) (- pos-y))))
+#+end_src
+*** Configure some windows to always appear on certain desktops
+#+begin_src emacs-lisp
+  (defun my/configure-window-by-class ()
+    (interactive)
+    ; (pcase exwm-class-name
+    ;   ("IceCat" (exwm-workspace-move-window 0))
+    ;   ("Sol" (exwm-workspace-move-window 3))
+    ;   ("mpv" (exwm-floating-toggle-floating)
+    ;          (exwm-layout-toggle-mode-line)))
+    )
+#+end_src
+*** Update displays using autorandr
+https://github.com/phillipberndt/autorandr.
+#+begin_src emacs-lisp
+  (defun my/update-displays ()
+    (my/run-in-background "autorandr --change --force")
+    (my/set-wallpaper)
+    (message "Display config: %s"
+             (string-trim (shell-command-to-string "autorandr --current"))))
+#+end_src
+* Exwm-randr
+#+begin_src emacs-lisp
+  (use-package exwm-randr
+    :straight (:type built-in)
+    :config
+    (exwm-randr-enable)
+    (setq exwm-randr-workspace-monitor-plist
+          '(0 "LVDS-1" 9 "LVDS-1" 1 "HDMI-3" 2 "HDMI-3"))
+    (my/update-displays)
+    (add-hook 'exwm-randr-screen-change-hook #'my/update-displays)
+    (setq exwm-workspace-warp-cursor t) ;; Automatically send the mouse cursor to the selected workspace's display
+    (setq mouse-autoselect-window t
+          focus-follows-mouse t) ;; Window focus should follow the mouse pointer
+    (setq exwm-input-prefix-keys
+          '(?\C-g
+            ?\C-h
+            ?\C-u
+            ?\C-x
+            ?\M-x
+            ?\M-`
+            ?\M-&
+            ?\M-:
+            ?\C-\ ));; Ctrl+Space ;; These keys will always be passed through to emacs
+    (define-key exwm-mode-map [?\C-q] 'exwm-input-send-next-key) ;; Ctrl-q will force send any of the above keys (e.g. ctrl-c)
+    (setq exwm-input-global-keys
+          `(([?\s-r] . exwm-reset)
+            ([s-left] . windmove-left)
+            ([?\s-h] . windmove-left)
+            ([s-right] . windmove-right)
+            ([?\s-l] . windmove-right)
+            ([?\s-k] . windmove-up)
+            ([s-up] . windmove-up)
+            ([s-down] . windmove-down)
+            ([?\s-j] . windmove-down)
+            ([?\s-&] . (lambda (command)
+                         (interactive (list (read-shell-command "$ ")))
+                         (start-process-shell-command command nil command)))
+            ([?\s-w] . exwm-workspace-switch)
+            ,@(mapcar (lambda (i) ; Generate a keybinding to reach every workspace
+                        `(,(kbd (format "s-%d" i)) .
+                          (lambda ()
+                            (interactive)
+                            (exwm-workspace-switch-create ,i))))
+                      (number-sequence 0 9)))) ; These keys work, no matter the state
+    ;(exwm-input-set-key (kbd "s-SPC") 'counsel-linux-app)
+)
+#+end_src
+* Exwm
+#+begin_src emacs-lisp 
+  (use-package exwm
+    :straight (:type built-in)
+    :after exwm-randr
+    :preface
+    :config
+    (add-hook 'exwm-update-class-hook #'my/exwm-update-class) ;; When window "class" updates, use it to set the buffer name
+    (add-hook 'exwm-update-title-hook #'my/exwm-update-title) ;; When window title updates, use it to set the buffer name
+    (add-hook 'exwm-manage-finish-hook #'my/configure-window-by-class) ;; Configure windows as they're created
+    (add-hook 'exwm-init-hook #'my/exwm-init-hook) ;; When EXWM starts up, do some extra confifuration
+    (add-hook 'exwm-update-class-hook #'my/exwm-update-class)
+    (add-hook 'exwm-init-hook #'my/exwm-init-hook)
+    (exwm-enable))
+#+end_src
+* Desktop Notifications with Dunst
+I use an application called [[https://dunst-project.org/][Dunst]] to enable the display of desktop notifications from Emacs and other applications running within EXWM.  Consult the [[https://dunst-project.org/documentation/][documentation]] for more details on how to configure this to your liking!
+
+Here are some things you might want to consider changing:
+
+- =format= - Customize how notification text contents are displayed
+- =geometry= - Where the notification appears and how large it should be by default
+- =urgency_normal=, etc - configures the background and frame color for notifications of different types
+- =max_icon_size= - Constrain icon display since some icons will be larger than others
+- =icon_path= - Important if your icons are not in a common location (like when using GNU Guix)
+- =idle_threshold= - Wait for user to become active for this long before hiding notifications
+- =mouse_left/right/middle_click= - Action to take when clicking a notification
+- Any of the key bindings in the =shortcuts= section (though these are deprecated in 1.5.0, use =dunstctl=)
+
+#+begin_src conf :tangle ~/.config/dunst/dunstrc :mkdirp yes
+
+  [global]
+      ### Display ###
+      monitor = 0
+
+      # The geometry of the window:
+      #   [{width}]x{height}[+/-{x}+/-{y}]
+      geometry = "500x10-10+50"
+
+      # Show how many messages are currently hidden (because of geometry).
+      indicate_hidden = yes
+
+      # Shrink window if it's smaller than the width.  Will be ignored if
+      # width is 0.
+      shrink = no
+
+      # The transparency of the window.  Range: [0; 100].
+      transparency = 10
+
+      # The height of the entire notification.  If the height is smaller
+      # than the font height and padding combined, it will be raised
+      # to the font height and padding.
+      notification_height = 0
+
+      # Draw a line of "separator_height" pixel height between two
+      # notifications.
+      # Set to 0 to disable.
+      separator_height = 1
+      separator_color = frame
+
+      # Padding between text and separator.
+      padding = 8
+
+      # Horizontal padding.
+      horizontal_padding = 8
+
+      # Defines width in pixels of frame around the notification window.
+      # Set to 0 to disable.
+      frame_width = 2
+
+      # Defines color of the frame around the notification window.
+      frame_color = "#89AAEB"
+
+      # Sort messages by urgency.
+      sort = yes
+
+      # Don't remove messages, if the user is idle (no mouse or keyboard input)
+      # for longer than idle_threshold seconds.
+      idle_threshold = 120
+
+      ### Text ###
+
+      font = Cantarell 20
+
+      # The spacing between lines.  If the height is smaller than the
+      # font height, it will get raised to the font height.
+      line_height = 0
+      markup = full
+
+      # The format of the message.  Possible variables are:
+      #   %a  appname
+      #   %s  summary
+      #   %b  body
+      #   %i  iconname (including its path)
+      #   %I  iconname (without its path)
+      #   %p  progress value if set ([  0%] to [100%]) or nothing
+      #   %n  progress value if set without any extra characters
+      #   %%  Literal %
+      # Markup is allowed
+      format = "<b>%s</b>\n%b"
+
+      # Alignment of message text.
+      # Possible values are "left", "center" and "right".
+      alignment = left
+
+      # Show age of message if message is older than show_age_threshold
+      # seconds.
+      # Set to -1 to disable.
+      show_age_threshold = 60
+
+      # Split notifications into multiple lines if they don't fit into
+      # geometry.
+      word_wrap = yes
+
+      # When word_wrap is set to no, specify where to make an ellipsis in long lines.
+      # Possible values are "start", "middle" and "end".
+      ellipsize = middle
+
+      # Ignore newlines '\n' in notifications.
+      ignore_newline = no
+
+      # Stack together notifications with the same content
+      stack_duplicates = true
+
+      # Hide the count of stacked notifications with the same content
+      hide_duplicate_count = false
+
+      # Display indicators for URLs (U) and actions (A).
+      show_indicators = yes
+
+      ### Icons ###
+
+      # Align icons left/right/off
+      icon_position = left
+
+      # Scale larger icons down to this size, set to 0 to disable
+      max_icon_size = 88
+
+      # Paths to default icons.
+      icon_path = /usr/share/icons/Adwaita/96x96/status:/usr/share/icons/Adwaita/96x96/emblems
+
+      ### History ###
+
+      # Should a notification popped up from history be sticky or timeout
+      # as if it would normally do.
+      sticky_history = no
+
+      # Maximum amount of notifications kept in history
+      history_length = 20
+
+      ### Misc/Advanced ###
+
+      # Browser for opening urls in context menu.
+      browser = qutebrowser
+
+      # Always run rule-defined scripts, even if the notification is suppressed
+      always_run_script = true
+
+      # Define the title of the windows spawned by dunst
+      title = Dunst
+
+      # Define the class of the windows spawned by dunst
+      class = Dunst
+
+      startup_notification = false
+      verbosity = mesg
+
+      # Define the corner radius of the notification window
+      # in pixel size. If the radius is 0, you have no rounded
+      # corners.
+      # The radius will be automatically lowered if it exceeds half of the
+      # notification height to avoid clipping text and/or icons.
+      corner_radius = 4
+
+      mouse_left_click = close_current
+      mouse_middle_click = do_action
+      mouse_right_click = close_all
+
+  # Experimental features that may or may not work correctly. Do not expect them
+  # to have a consistent behaviour across releases.
+  [experimental]
+      # Calculate the dpi to use on a per-monitor basis.
+      # If this setting is enabled the Xft.dpi value will be ignored and instead
+      # dunst will attempt to calculate an appropriate dpi value for each monitor
+      # using the resolution and physical size. This might be useful in setups
+      # where there are multiple screens with very different dpi values.
+      per_monitor_dpi = false
+
+  [shortcuts]
+
+      # Shortcuts are specified as [modifier+][modifier+]...key
+      # Available modifiers are "ctrl", "mod1" (the alt-key), "mod2",
+      # "mod3" and "mod4" (windows-key).
+      # Xev might be helpful to find names for keys.
+
+      # Close notification.
+      #close = ctrl+space
+
+      # Close all notifications.
+      #close_all = ctrl+shift+space
+
+      # Redisplay last message(s).
+      # On the US keyboard layout "grave" is normally above TAB and left
+      # of "1". Make sure this key actually exists on your keyboard layout,
+      # e.g. check output of 'xmodmap -pke'
+      history = ctrl+grave
+
+      # Context menu.
+      context = ctrl+shift+period
+
+  [urgency_low]
+      # IMPORTANT: colors have to be defined in quotation marks.
+      # Otherwise the "#" and following would be interpreted as a comment.
+      background = "#222222"
+      foreground = "#888888"
+      timeout = 10
+      # Icon for notifications with low urgency, uncomment to enable
+      #icon = /path/to/icon
+
+  [urgency_normal]
+      background = "#1c1f26"
+      foreground = "#ffffff"
+      timeout = 10
+      # Icon for notifications with normal urgency, uncomment to enable
+      #icon = /path/to/icon
+
+  [urgency_critical]
+      background = "#900000"
+      foreground = "#ffffff"
+      frame_color = "#ff0000"
+      timeout = 0
+      # Icon for notifications with critical urgency, uncomment to enable
+      #icon = /path/to/icon
+
+#+end_src
+We can also set up some functions for enabling and disabling notifications at any time:
+#+begin_src emacs-lisp
+  (defun my/disable-desktop-notifications ()
+    (interactive)
+    (start-process-shell-command "notify-send" nil "notify-send \"DUNST_COMMAND_PAUSE\""))
+  (defun my/enable-desktop-notifications ()
+    (interactive)
+    (start-process-shell-command "notify-send" nil "notify-send \"DUNST_COMMAND_RESUME\""))
+  (defun my/toggle-desktop-notifications ()
+    (interactive)
+    (start-process-shell-command "notify-send" nil "notify-send \"DUNST_COMMAND_TOGGLE\""))
+#+end_src
+* TODO Workspaces
+  Workspaces should remember window layout and only have access to relevant buffers
+  Special buffers should mainly be in workspace 0
+  New / empty workspaces should be blank
+* TODO Show me a date and time workspace on command
+Maybe throw usage stats and today's progress in there too
+* TODO The window that's got focus should have a coloured modeline
+  Maybe the rest could slowly start to disentegrate?
+* TODO Let me reorganise monitor layouts
+Screen above, laptop centered below
+* TODO Screenshare using MiracleCast
+* TODO Modify the emacs-exwm guix package to begin with the settings outlined in System Crafters
+The details are oulined around 14 minutes into Emacs Desktop Environment #1 - Getting Started with EXWM
+#+begin_src shell
+# maybe if you're running in a vm
+# spice-vdagent
+exec dbus-launch --exit-with-session emacs -mm --debug-init
+#+end_src

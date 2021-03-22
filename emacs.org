@@ -1,0 +1,1727 @@
+#+TITLE: Emacs Config
+#+PROPERTY: header-args            :noweb no-export :comments both :results silent :mkdirp no 
+#+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el 
+I would like to see that work is driven by org mode.
+Actionable items will be grouped by projects.
+Each project will have a top-level README.md which will contain project planning and other documentation, written in a "literate" style.
+When working on a TODO item in a project, a perspective should be created. Org's clock should be started. Switching perspectives should pause the clock on the current TODO and start the clock on the new item.
+
+The use of perspectives in this way should help roll-up all the tasks created by a "yak shaving" expedition, particularly when perspectives are sorted by created.
+
+The README document in each project should contain a backlog heading.
+
+E.g. I have an idea, I want to ensure that posframes are used for all hydras. I want to ensure that all text is visible in all hydras, which in the case of C-h, doesn't appear to be true. I also want to ensure that the C-spc / spc hydra is a posframe.
+
+I should record the ideas, using org-capture. I should then refile those ideas into the relevant areas of the config.
+
+* Try to define variables here where possible
+I hope this section will lead to reduced repetition.
+
+- [ ] If my cursor is on a variable, show the value in the modeline
+
+#+begin_src emacs-lisp
+  (defvar my/org-roam-directory "~/org/roam/")
+  (defvar my/org-roam-dailies-directory "~/org/roam/daily/")
+#+end_src
+* Cross cutting concerns
+Things needed by more than one other thing.
+** straight - A functional package manager
+https://github.com/raxod502/straight.el
+You must install git to use straight.el
+You must remove any code that relates to package.el, therefore you must remove any use-package :ensure / use-package-always-ensure
+*** Stop package.el
+Prevent package.el from modifying this file.
+#+begin_src emacs-lisp
+  (setq package-enable-at-startup nil)
+#+end_src
+*** Stop custom
+I really don't want custom in my .init.el.
+#+begin_src emacs-lisp
+  (setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+#+end_src
+*** Variables that need setting before bootstrap
+Because I modify all my repos in emacs anyways and they're stored in ~/.emacs.d/straight/repos, I can probably get away with only checking for modifications on save.
+#+begin_src emacs-lisp
+  (when
+      (eq window-system 'x)
+      (setq straight-check-for-modifications '(check-on-save)))
+#+end_src
+
+This allows me to get rid of the abundance of :straight t's that were littering my config.
+#+begin_src emacs-lisp
+  (setq straight-use-package-by-default t)
+#+end_src
+
+Setting the variable straight-cache-autoloads causes the autoloads of all used packages to be cached in a single file.
+You may wish to call straight-prune-build occasionally otherwise the file may grow large over time.
+#+begin_src emacs-lisp
+  (setq straight-cache-autoloads t)
+#+end_src
+
+Straight reports process output to its buffer, I'm normally just not interested, so I add a space to the beginning of its name to hide it from view.
+#+begin_src emacs-lisp
+  (setq straight-process-buffer " *straight-process*")
+#+end_src
+*** straight.el bootstrap code
+#+begin_src emacs-lisp
+  (defvar bootstrap-version)
+  (let ((bootstrap-file
+         (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+        (bootstrap-version 5))
+    (unless (file-exists-p bootstrap-file)
+      (with-current-buffer
+          (url-retrieve-synchronously
+           "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+           'silent 'inhibit-cookies)
+        (goto-char (point-max))
+        (eval-print-last-sexp)))
+    (load bootstrap-file nil 'nomessage))
+#+end_src
+** use-package - Declarative package configuration and loading
+use-package loads features, not packages. Features can be tested for using featurep.
+While use-package can often seem like magic, you can demystify it by placing a point after a use-package stanza and doing M-x pp-macroexpand-last-sexp.
+https://emacs.stackexchange.com/questions/61276/why-does-use-package-considers-emacs-as-a-package
+#+begin_src emacs-lisp
+  (straight-use-package 'use-package)
+#+end_src
+*** Notes 
+https://github.com/jwiegley/use-package
+- Use the :init keyword to execute code before a package is loaded.
+- Similarly, :config can be used to execute code after a package is loaded. In cases where loading is done lazily (see more about autoloading below), this execution is deferred until after the autoload occurs: 
+** UTF8
+Set up unicode all the time.
+#+begin_src emacs-lisp
+  (prefer-coding-system       'utf-8)
+  (set-default-coding-systems 'utf-8)
+  (set-terminal-coding-system 'utf-8)
+  (set-keyboard-coding-system 'utf-8)
+
+  (setq default-buffer-file-coding-system 'utf8)
+  (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
+#+end_src
+** COMMENT Posframe
+Pop up a child frame at point, connected to its root window's buffer.
+#+begin_src emacs-lisp
+  (use-package posframe :delight)
+#+end_src
+** Make it easy to restart emacs
+#+begin_src emacs-lisp
+  (use-package restart-emacs :delight) 
+#+end_src
+** Imitate vi / vim
+*** Modes that begin in evil-emacs state
+#+begin_src emacs-lisp
+  (defun my/modes-that-start-in-emacs-state-hook () ;; TODO If i do go into insert mode, esc should return to emacs mode instead of normal mode
+    (dolist (mode '(eshell-mode
+                    git-rebase-mode
+                    erc-mode 
+                    term-mode))
+      (add-to-list 'evil-emacs-state-modes mode)))
+#+end_src
+*** Modes that begin in evil-insert state
+*** Use evil-mode
+For more information about this package, see https://github.com/noctuid/evil-guide
+#+begin_src emacs-lisp
+  (use-package evil
+    :delight
+    :init
+    (setq evil-want-keybinding nil) ; I prefer the evil-collection
+    (setq evil-want-integration t)
+    :config
+    (add-hook 'evil-mode-hook 'my/modes-that-start-in-emacs-state-hook)
+    (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
+    (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
+    (evil-mode 1))
+#+end_src
+For more information about this package, see https://github.com/emacs-evil/evil-collection
+#+begin_src emacs-lisp
+  (use-package evil-collection
+    :delight
+    :after (company evil)
+    :config (evil-collection-init))
+#+end_src
+For more information about this package, see https://github.com/hlissner/evil-multiedit
+#+begin_src emacs-lisp
+  (use-package evil-multiedit
+    :delight
+    :after (evil)
+    :config (evil-multiedit-default-keybinds))
+#+end_src
+For more information about this package, see https://elpa.gnu.org/packages/undo-tree.html
+#+begin_src emacs-lisp
+  (use-package undo-tree
+    :delight
+    :after (evil))
+#+end_src
+*** evil-cleverparens 
+Paredit with evil awareness for more than just lisp
+#+begin_src emacs-lisp
+  (use-package evil-cleverparens
+    :after (evil))
+#+end_src
+** Hydras - sticky key bindings
+https://rski.github.io/emacs/hydra/2017/04/08/a-case-for-hydra.html
+https://github.com/abo-abo/hydra/wiki
+https://oremacs.com/2015/01/20/introducing-hydra/
+
+It helps me to think of a hydra function as a vim mode.
+
+I've added basic stack functionality so hydras can be chained. This functionality was copied from the hydra community documentation wiki on github.
+
+#+begin_src emacs-lisp
+  (use-package hydra 
+    :delight
+    :config
+    (setq hydra-lv t)
+    (setq lv-use-separator t)
+
+    (defvar hydra-stack nil)
+    (defun hydra-push (expr)
+      (push `(lambda () ,expr) hydra-stack))
+
+    (defun hydra-pop ()
+      (interactive)
+      (let ((x (pop hydra-stack)))
+        (when x
+          (funcall x)))))
+#+end_src
+*** COMMENT Hydra-posframe
+https://github.com/jerrypnz/major-mode-hydra.el/issues/30
+#+begin_src emacs-lisp
+  (use-package hydra-posframe ;; NOTE: required hydra and posframe
+    :straight (:type git :host github :repo "jerrypnz/hydra-posframe")
+    :hook (after-init . hydra-posframe-enable))
+#+end_src
+*** Pretty Hydras
+https://github.com/jerrypnz/major-mode-hydra.el#pretty-hydra
+Pretty hydras is included with the major-mode-hydras feature.
+Similar to the :mode-hydra keyword above, you can use :pretty-hydra keyword in use-package to create pretty hydras with commands autoloaded. 
+Like :mode-hydra, it also supports omitting name and/or body. When the name is omitted, it defaults to <package>-hydra. 
+**** Leader Hydra
+
+*** Major Mode Hydras
+https://github.com/jerrypnz/major-mode-hydra.el
+As I use use-package, I can use the :mode-hydra keyword to create major mode hydras. 
+#+begin_src emacs-lisp
+  (use-package major-mode-hydra
+    :custom
+    (major-mode-hydra-invisible-quit-key "SPC")
+    (major-mode-hydra-title-generator
+	'(lambda (mode)
+	   (s-concat "\n"
+		     (s-repeat 10 " ")
+		     (all-the-icons-icon-for-mode mode :v-adjust 0.05)
+		     " "
+		     (symbol-name mode)
+		     " commands")))
+    :bind
+    ("M-SPC" . major-mode-hydra)
+    )
+#+end_src
+*** Hydra definitions
+Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-package declaration.
+**** Text scaling
+#+begin_src emacs-lisp :noweb-ref hydra-text-scale
+  (with-eval-after-load 'hydra
+      (message "Defining text scale hydra")
+      (defhydra my/hydra-text-scale (:color teal)
+        "scale text"
+        ("j" text-scale-increase "in")
+        ("k" text-scale-decrease "out")
+        ("q" hydra-pop "exit"))
+
+      (with-eval-after-load 'major-mode-hydra
+        (pretty-hydra-define+ my/hydra-leader ()
+          ("Text"
+           (("s" (progn 
+                   (my/hydra-text-scale/body)
+                   (hydra-push '(my/hydra-leader/body))) 
+             "scale text"))))))
+#+end_src
+**** Straight
+#+begin_src emacs-lisp :noweb-ref hydra-straight-helper
+  (with-eval-after-load 'hydra
+    (message "Defining straight helper hydra")
+      (defhydra hydra-straight-helper (:hint nil)
+      "
+      _c_heck all       |_f_etch all     |_m_erge all      |_n_ormalize all   |p_u_sh all
+      _C_heck package   |_F_etch package |_M_erge package  |_N_ormlize package|p_U_sh package
+      ----------------^^+--------------^^+---------------^^+----------------^^+------------||_q_uit||
+      _r_ebuild all     |_p_ull all      |_v_ersions freeze|_w_atcher start   |_g_et recipe
+      _R_ebuild package |_P_ull package  |_V_ersions thaw  |_W_atcher quit    |prun_e_ build"
+      ("c" straight-check-all)
+      ("C" straight-check-package)
+      ("r" straight-rebuild-all)
+      ("R" straight-rebuild-package)
+      ("f" straight-fetch-all)
+      ("F" straight-fetch-package)
+      ("p" straight-pull-all)
+      ("P" straight-pull-package)
+      ("m" straight-merge-all)
+      ("M" straight-merge-package)
+      ("n" straight-normalize-all)
+      ("N" straight-normalize-package)
+      ("u" straight-push-all)
+      ("U" straight-push-package)
+      ("v" straight-freeze-versions)
+      ("V" straight-thaw-versions)
+      ("w" straight-watcher-start)
+      ("W" straight-watcher-quit)
+      ("g" straight-get-recipe)
+      ("e" straight-prune-build)
+      ("q" nil))
+
+      (with-eval-after-load 'major-mode-hydra
+	(pretty-hydra-define+ my/hydra-leader ()
+	  ("Text"
+	   (("S" (progn 
+		   (hydra-straight-helper/body)
+		   (hydra-push '(my/hydra-leader/body))) 
+	     "Straight"))))))
+#+end_src
+**** Global org-mode
+#+begin_src emacs-lisp
+  (with-eval-after-load 'hydra
+    (message "Defining global org mode hydra")
+    (defhydra hydra-global-org (:color blue :hint nil)
+      "
+    Timer^^        ^Clock^         ^Capture^
+    --------------------------------------------------
+    s_t_art        _w_ clock in    _c_apture
+     _s_top        _o_ clock out   _l_ast capture
+    _r_eset        _j_ clock goto
+    _p_rint
+    "
+      ("t" org-timer-start)
+      ("s" org-timer-stop)
+      ;; Need to be at timer
+      ("r" org-timer-set-timer)
+      ;; Print timer value to buffer
+      ("p" org-timer)
+      ("w" (org-clock-in '(4)))
+      ("o" org-clock-out)
+      ;; Visit the clocked task from any buffer
+      ("j" org-clock-goto)
+      ("c" org-capture)
+      ("l" org-capture-goto-last-stored))
+
+      (with-eval-after-load 'major-mode-hydra
+	(pretty-hydra-define+ my/hydra-leader ()
+	  ("Text"
+	   (("o" (progn 
+		   (hydra-global-org/body)
+		   (hydra-push '(my/hydra-leader/body))) 
+	     "Org"))))))
+#+end_src
+**** Help
+#+begin_src emacs-lisp
+  (with-eval-after-load 'all-the-icons
+    (defvar my/help--title (all-the-icons-faicon "medkit" "Help" 1 -0.05))
+                                          ; C-;     iedit-mode-toggle-on-function
+    (pretty-hydra-define+ my/help (:foreign-keys warn :title my/help--title :quit-key "SPC")
+      ("Help"
+       (("H" help-for-help "Help for help")
+        ("E" my/help-emacs/body "Learn more about Emacs")
+        ("g" my/help-gnu "Learn more about Gnu")
+        ("a" apropos-command)
+        ("d" apropos-documentation)
+        ("e" view-echo-area-messages)
+        ("l" view-lossage))
+
+       "Info"
+       (("i" info)
+        ("4" info-other-window "Info other window")
+        ("K" Info-goto-emacs-key-command-node)
+        ("F" Info-goto-emacs-command-node "Goto info node for command")
+        ("S" info-lookup-symbol))
+
+       "Help at point - something specific, normally with a default"
+       (("c" describe-coding-system "Describe coding system")
+        ("D" describe-input-method "Describe input method")
+        ("c" describe-key-briefly)
+        ("b" describe-bindings)
+        ("f" describe-function)
+        ("w" where-is)
+        ("k" describe-key)
+        ("m" describe-mode)
+        ("o" describe-symbol)
+        ("v" describe-variable)
+        ("f" helpful-callable "callable")
+        ("v" helpful-variable "variable")
+        ("k" helpful-key "key")
+        ("c" helpful-command "command")
+        ("." helpful-at-point "thing at point")
+        ("d" display-local-help "Get help at point"))))
+
+      (pretty-hydra-define+ my/hydra-leader ()
+        ("Help"
+         (("h" (my/help/body)
+           "Help")))))
+    ;; RET     view-order-manuals
+    ;; C-s     search-forward-help-for-help
+#+end_src
+**** Help for emacs
+#+begin_src emacs-lisp
+  (with-eval-after-load 'all-the-icons
+    (defvar my/help-emacs--title (all-the-icons-fileicon "emacs" "Help - Emacs" 1 -0.05))
+
+    (pretty-hydra-define+ my/help-gnu (:foreign-keys warn :title my/help-gnu--title :quit-key "SPC")
+      ("Emacs"
+       (("d" view-emacs-debugging "How to debug emacs")
+        ("P" view-external-packages "Where to get packages")
+        ("r" info-emacs-manual)
+        ("P" describe-package)
+        ("p" finder-by-keyword "Find packages matching a given keyword")
+        ("L" describe-language-environment)
+        ("h" view-hello-file)
+        ("I" describe-input-method)
+        ("s" describe-syntax)
+        ("F" view-emacs-FAQ "FAQ")
+        ("t" help-with-tutorial "Tutorial")
+        ("n" view-emacs-news "News")
+        ("p" view-emacs-problems "Info on known emacs problems")
+        ("t" view-emacs-todo "Todos")))))
+#+end_src
+**** Help for gnu
+#+begin_src emacs-lisp
+  (with-eval-after-load 'all-the-icons
+    (defvar my/help-gnu--title (all-the-icons-fileicon "gnu" "Help - Gnu" 1 -0.05))
+  
+    (pretty-hydra-define+ my/help-gnu (:foreign-keys warn :title my/help-gnu--title :quit-key "SPC")
+      ("Gnu Project"
+       (("e" about-emacs "About emacs")
+        ("g" describe-gnu-project "Browse online information on the Gnu project")
+        ("c" describe-copying "Describe copying")
+        ("l" describe-distribution "How to get the latest emacs")
+        ("w" describe-no-warranty "Warranty")))))
+#+end_src
+**** Get battery status
+#+begin_src emacs-lisp
+  (with-eval-after-load 'major-mode-hydra
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Battery"
+       (("b" (battery)
+	 "Show battery status")))))
+#+end_src
+**** emacs-guix
+#+begin_src emacs-lisp
+  (with-eval-after-load 'major-mode-hydra
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Guix"
+       (("g" (guix-popup)
+	 "Guix")))))
+#+end_src
+** Help
+https://github.com/Wilfred/helpful
+Helpful is an alternative to the built-in Emacs help that provides much more contextual information.
+#+begin_src emacs-lisp
+  (use-package helpful
+    :delight
+    :custom
+    (counsel-describe-function-function #'helpful-callable)
+    (counsel-describe-variable-function #'helpful-variable)
+    :bind
+    ([remap describe-function] . counsel-describe-function)
+    ([remap describe-command] . helpful-command)
+    ([remap describe-variable] . counsel-describe-variable)
+    ([remap describe-key] . helpful-key)
+    :pretty-hydra
+    ((:color teal :quit-key "SPC")
+     ("Helpful"
+      ()))
+    :bind ("C-h" . my/help/body))
+#+end_src
+** Keybinding
+Use M-x describe-personal-keybindings to see keybindings set by init.el
+*** Get ESC to behave consistently
+#+begin_src emacs-lisp
+  (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+#+end_src
+*** Which-key
+#+begin_src emacs-lisp
+  (use-package which-key
+    :delight
+    :config
+    (setq which-key-idle-delay 0)
+    (which-key-mode))
+#+end_src
+**** COMMENT Which-key-posframe
+#+begin_src emacs-lisp
+  (use-package which-key-posframe
+    :config
+    (which-key-posframe-mode)
+    (setq which-key-posframe-poshandler 'posframe-poshandler-window-center))
+#+end_src
+*** General.el for key bindings
+- [ ] Pressing enter on any kind of link, should follow the link, in an other window
+
+This library plays well with evil and use-package
+#+begin_src emacs-lisp
+  (use-package general 
+    :delight
+    :config 
+    (general-evil-setup t)
+
+    (with-eval-after-load 'all-the-icons
+        (defvar my/hydra-leader--title (all-the-icons-faicon "medkit" "Leader" 1 -0.05)))
+
+    (pretty-hydra-define+ my/hydra-leader
+      (:title my/hydra-leader--title :color teal :quit-key "SPC")
+      ("Xref"
+       (("q" hydra-pop "exit")
+        ("." xref-find-definitions "Jump to definition"))))
+
+    (general-define-key "s-SPC" 'my/hydra-leader/body)
+    (mmap "SPC" 'my/hydra-leader/body)
+
+    ;; (general-create-definer my/leader-key-def
+    ;;   :keymaps '(normal insert visual emacs) 
+    ;;   :prefix "SPC" 
+    ;;   :global-prefix "C-SPC")
+
+    ;; (my/leader-key-def
+    ;;   ;"a" '(:ignore t :which-key "app")
+    ;;   ;"b" '(:ignore t :which-key "bookmark")
+    ;;   ;"c" '(:ignore t :which-key "code")
+    ;;   ;"h" '(:ignore t :which-key "help")
+    ;;   ;"p" '(:ignore t :which-key "project")
+    ;;   "t" '(:ignore t :which-key "toggle")
+    ;;   ;"v" '(:ignore t :which-key "version")
+    ;;   ;"w" '(:ignore t :which-key "window") ;; TODO direct me to ctrl+w
+    ;;   )
+    )
+#+end_src
+*** Key chords
+#+begin_src emacs-lisp
+  (use-package key-chord
+    :config
+    (key-chord-mode 1)
+    (key-chord-define-global "  " 'my/hydra-leader/body))
+#+end_src
+** Various completion functionality
+https://writequit.org/denver-emacs/presentations/2017-04-11-ivy.html
+https://company-mode.github.io
+*** Company
+Modular in-buffer completion framework.
+#+begin_src emacs-lisp
+  (use-package company
+    :config (global-company-mode))
+#+end_src
+**** Company-box
+A company front-end with icons
+https://github.com/sebastiencs/company-box
+#+begin_src emacs-lisp
+  (use-package company-box 
+    :hook (company-mode . company-box-mode))
+#+end_src
+**** COMMENT Company-posframe
+https://github.com/tumashu/company-posframe
+#+begin_src emacs-lisp
+  (use-package company-posframe
+    :hook (company-mode . company-posframe-mode) 
+    :config (company-posframe-mode 1))
+#+end_src
+*** DONE [#B] Ivy, a generic completion mechanism for Emacs.
+Ivy is for quick and easy selection from a list.
+#+begin_src emacs-lisp
+  (use-package ivy
+    :delight
+    :bind (("C-s" . swiper)
+           :map ivy-minibuffer-map
+           ("TAB" . ivy-alt-done)
+           ("C-j" . ivy-next-line)
+           ("C-k" . ivy-previous-line)
+           ("C-l" . ivy-alt-done)
+           :map ivy-switch-buffer-map
+           ("C-d" . ivy-switch-buffer-kill)
+           ("C-k" . ivy-previous-line)
+           ("C-l" . ivy-done)
+           :map ivy-reverse-i-search-map
+           ("C-d" . ivy-reverse-i-search-kill)
+           ("C-k" . ivy-previous-line))
+    :custom
+    (ivy-use-virtual-buffers t) ; is this interfering with perspective https://github.com/nex3/perspective-el/issues/10
+    (ivy-count-format "(%d/%d) ")
+    (ivy-height 25)
+    :config
+    (ivy-mode 1))
+#+end_src
+
+**** COMMENT Ivy-Posframe
+https://github.com/tumashu/ivy-posframe
+#+begin_src emacs-lisp
+  (use-package ivy-posframe
+    :config
+    (setq ivy-posframe-height-alist '((swiper . 10)
+                                      (t . 20)))
+    (setq ivy-posframe-parameters '((left-fringe . 1)
+                                    (right-fringe . 1)))
+    (setq ivy-posframe-display-functions-alist
+          '((swiper . ivy-posframe-display-at-point)
+            (complete-symbol . ivy-posframe-display-at-point)
+            (counsel-M-x . ivy-posframe-display-at-frame-center)
+            (t . ivy-posframe-display)))
+    (ivy-posframe-mode 1))
+#+end_src
+
+**** Ivy-Rich
+https://github.com/Yevgnen/ivy-rich
+- all-the-icons-ivy-rich-mode depends on ivy-rich and respects ivy-rich-mode.
+- To display icons correctly, you should run M-x all-the-icons-install-fonts to install the necessary fonts.
+- For better performance, enable all-the-icons-ivy-rich-mode before ivy-rich-mode .
+- Enable other packages like counsel-projectile before enabling all-the-icons-ivy-rich-mode.
+#+begin_src emacs-lisp
+  (use-package all-the-icons-ivy-rich
+    :delight
+    :after (ivy all-the-icons counsel-projectile)
+    :config 
+    ;; Slow Rendering
+    ;; If you experience a slow down in performance when rendering multiple icons simultaneously,
+    ;; you can try setting the following variable
+    (setq inhibit-compacting-font-caches t) ; May enlarge emacs memory footprint
+    (all-the-icons-ivy-rich-mode 1))
+
+  (use-package ivy-rich
+    :delight
+    :after (all-the-icons-ivy-rich)
+    :hook (ivy-mode . ivy-rich-mode)
+    :custom
+    (ivy-rich-modify-columns
+     'ivy-switch-buffer
+     '((ivy-rich-switch-buffer-size (:align right))
+       (ivy-rich-switch-buffer-major-mode (:width 20 :face error)))))
+#+end_src
+*** FIXME Counsel, a collection of Ivy-enhanced versions of common Emacs commands.
+https://oremacs.com/2015/04/09/counsel-completion/
+Counsel lives in the same repository as swiper and uses ivy too
+Counsel provides some useful commands that work with ivy
+- Complete Elisp at point with counsel-el.
+- Complete Clojure at point with counsel-clj.
+- Open a git-managed file with counsel-git.
+- Describe an Elisp variable with counsel-describe-variable.
+- Describe an Elisp function with counsel-describe-function.
+- Look up an Elisp symbol in the info with counsel-info-lookup-symbol.
+- Insert a Unicode character at point with counsel-unicode-char.
+#+begin_src emacs-lisp 
+  (use-package counsel
+    :demand t
+    :delight
+    :hook (after-init . counsel-mode)
+    :config (counsel-mode 1)
+    :bind (;("C-h f" . counsel-describe-function)
+           ;("C-h l" . counsel-find-library)
+           ;("C-h u" . counsel-unicode-char)
+           ;("C-h v" . counsel-describe-variable)
+           ;("C-h s" . counsel-info-lookup-symbol) ; These now need adding to the helpful hydra
+           ("M-x" . counsel-M-x)
+           ("C-x C-f" . counsel-find-file)
+           ("M-J" . counsel-switch-buffer)
+           ("s-`" . counsel-linux-app)
+           :map minibuffer-local-map ("C-r" . counsel-minibuffer-history)))
+#+end_src
+*** DONE Search
+**** DONE Buffers -> Swiper, any ivy enhanced alternative to isearch
+http://pragmaticemacs.com/emacs/dont-search-swipe/
+#+begin_src emacs-lisp 
+  (use-package swiper
+    :delight
+    :after (ivy)
+    :bind (("C-s" . swiper)
+           ("C-r" . swiper)))
+#+end_src
+**** DONE Filesystem
+Search and replace
+https://sam217pa.github.io/2016/09/11/nuclear-power-editing-via-ivy-and-ag/
+http://blog.binchen.org/posts/use-wgrep-and-evil-to-replace-text-efficiently.html
+#+begin_src emacs-lisp 
+  (use-package ag :delight)
+  (use-package wgrep :delight)
+#+end_src
+** UI modifications
+One thing I need to consider is whether changing themes in the middle of a session impacts the rest of my UI choices
+*** Line highlight
+#+begin_src emacs-lisp 
+  (global-hl-line-mode 1)
+  (set-face-attribute 'hl-line nil 
+                      :box t
+                      :inverse-video nil
+                      :weight 'ultra-bold)
+#+end_src
+*** Font
+These files are needed when running guix.
+#+begin_src shell
+  guix install font-abattis-cantarell
+  fc-list
+  fc-cache -f -v
+#+end_src
+
+These fonts suit me currently.
+#+begin_src emacs-lisp
+    (when
+        (eq window-system 'x)
+
+      (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
+      (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
+      (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 160 :weight 'regular)
+
+      (use-package unicode-fonts
+        :delight
+        :config
+        (unicode-fonts-setup)
+        ; (set-fontset-font "fontset-default" nil "DejaVu Sans Mono" nil 'append)
+        ; (set-face-attribute 'default nil :family "DejaVu")
+        ; (set-fontset-font "fontset-startup" nil "DejaVu Sans Mono" nil 'append)
+        ))
+
+    (when
+        (eq window-system 'w32)
+
+      (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
+      (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
+      (set-face-attribute 'variable-pitch nil :font "-outline-Noto Serif Thin-thin-normal-normal-serif-*-*-*-*-p-*-iso10646-1" :height 160)
+
+      (use-package unicode-fonts
+        :delight
+        :config
+        (unicode-fonts-setup)
+        ;(set-fontset-font "fontset-default" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
+        ;(set-face-attribute 'default nil :family "Consolas")
+        ;(set-fontset-font "fontset-startup" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
+  ))
+#+end_src
+*** Theme
+#+begin_src emacs-lisp
+  (use-package doom-themes
+    :delight
+    :config
+    (load-theme 'whiteboard t)
+    ; (load-theme 'doom-snazzy t)
+    ; (load-theme 'doom-manegarm t)
+    (with-eval-after-load 'general
+      (pretty-hydra-define+ my/hydra-leader ()
+	("Theme"
+	 (("t" counsel-load-theme "Try a theme"))))))
+    ;:bind ("C-T" . doom-themes-hydra/body)
+    ;:pretty-hydra
+    ;((:color teal :quit-key "SPC")
+    ; ("Theme"
+    ;  (("t" counsel-load-theme "Try a theme"))
+    ;  )))
+    ;; (defvar my/theme--title (all-the-icons-faicon "medkit" "Theme" 1 -0.05))
+    ;; (pretty-hydra-define my/theme (:foreign-keys warn :title my/theme--title :quit-key "SPC")
+    ;;   ("Theme"
+    ;;    (("t" counsel-load-theme "Try a theme")))))
+#+end_src
+**** Some additional themes for smart-modeline to use later
+***** smart modeline atom one dark theme
+#+begin_src emacs-lisp
+  (use-package smart-mode-line-atom-one-dark-theme)
+#+end_src
+***** solarized-theme
+#+begin_src emacs-lisp
+  (use-package solarized-theme)
+#+end_src
+***** smart modeline powerline theme
+#+begin_src emacs-lisp
+  (use-package smart-mode-line-powerline-theme)
+#+end_src
+*** Modeline
+**** smart modeline
+#+begin_src emacs-lisp
+  (use-package smart-mode-line
+    :config
+    (setq sml/no-confirm-load-theme t)
+    (setq sml/theme 'respectful)
+    (sml/setup))
+#+end_src
+**** mini modeline
+https://github.com/kiennq/emacs-mini-modeline
+#+begin_src emacs-lisp
+  (use-package mini-modeline
+    :after smart-mode-line
+    :custom
+    (mini-modeline-echo-duration 5)
+    (mini-modeline-right-padding 1)
+    :config
+    (defvaralias 'mini-modeline-frame 'exwm-workspace--current)
+    (setq mini-modeline-r-format
+          '("%e" ; (:eval (number-to-string (winum-get-number)))
+                 ; " "
+                 ; evil-mode-line-tag
+                 ; " "
+                 ; mode-line-modified
+                 ; mode-line-buffer-identification
+                 ; " "
+                 ; mode-line-position
+                 (:eval (nyan-create))
+                 (:eval
+                  (if (featurep 'perspective)
+                      (persp-current-name)
+                    "neverland"))
+                 ;(:eval (symbol-name major-mode))
+                 ; "   "
+                 ; (:eval (magit-get-current-branch))
+                 ; "   "
+                 ; (:eval (format-time-string "%l:%M%P"))
+                 )
+          mini-modeline-l-format nil)
+    (mini-modeline-mode t))
+#+end_src
+**** COMMENT Doom
+I like doom modeline https://seagle0128.github.io/doom-modeline/
+#+begin_src emacs-lisp 
+  (use-package doom-modeline
+    :delight
+    :init
+    (defun my/setup-custom-doom-modeline ()
+      (message "MyDOOM")
+      (doom-modeline-def-modeline 'my-simple-line
+        '(bar)
+        '(bar))
+      (doom-modeline-set-modeline 'my-simple-line 1))
+    (add-hook 'doom-modeline-mode-hook 'my/setup-custom-doom-modeline)
+    (doom-modeline-mode 1)
+    :custom
+    (doom-modeline-height 30)
+    (doom-modeline-bar-width 5)
+    :config
+  )
+#+end_src
+*** Minibuffer
+**** DONE eldoc-mode shows documentation in the minibuffer when writing code
+http://www.emacswiki.org/emacs/ElDoc
+#+begin_src emacs-lisp
+  (add-hook 'emacs-lisp-mode-hook 'turn-on-eldoc-mode)
+  (add-hook 'lisp-interaction-mode-hook 'turn-on-eldoc-mode)
+  (add-hook 'ielm-mode-hook 'turn-on-eldoc-mode)
+#+end_src
+*** Nyan-mode
+Just a little bit of fun, but way cooler than a scrollbar :)
+#+begin_src emacs-lisp
+    (use-package nyan-mode
+      :delight
+      :custom (nyan-wavy-trail 't)
+      :config 
+      (nyan-mode)
+      (nyan-start-animation))
+#+end_src
+*** Free as much screen real-estate as possible
+It's fine, the tooltip can stay, it'll display in the echo area.
+#+begin_src emacs-lisp
+  (tooltip-mode t)
+#+end_src
+I don't need scrollbars, I have nyan mode
+#+begin_src emacs-lisp
+  (scroll-bar-mode -1)
+#+end_src
+Bye bye pretty button bar, I prefer M-`
+#+begin_src emacs-lisp
+  (tool-bar-mode -1)
+#+end_src
+As above
+#+begin_src emacs-lisp
+  (menu-bar-mode 0) ; so long file -> menu
+#+end_src
+*** Bell
+I'm not a big fan of noise, but I do like the visible bell
+#+begin_src emacs-lisp
+  (setq visible-bell t)
+  (setq ring-bell-function nil) ; I wonder what other people are doing with this setting?
+#+end_src
+*** Cursor blinking
+I find a blinking cursor can be distracting
+#+begin_src emacs-lisp 
+  (blink-cursor-mode 0)
+#+end_src
+*** Dialog boxes
+I don't think dialog boxes are my style.
+#+begin_src emacs-lisp
+  (setq use-dialog-box nil)
+#+end_src
+*** Frame transparency
+#+begin_src emacs-lisp
+  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+  (add-to-list 'default-frame-alist '(alpha . (90 . 90 )))
+  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+  (add-to-list 'default-frame-alist '(fullscreen . maximized))
+#+end_src
+*** Icons
+#+begin_src emacs-lisp
+  (use-package all-the-icons
+    :delight)
+#+end_src
+*** Line numbers
+I prefer line numbers in most modes for pair programming etc.
+#+begin_src emacs-lisp
+  (global-display-line-numbers-mode t)
+  (dolist (mode '(org-mode-hook
+                  term-mode-hook
+                  erc-mode-hook
+                  help-mode-hook
+                  speedbar-mode-hook
+                  special-mode-hook
+                  Info-mode-hook
+                  vterm-mode-hook
+                  eshell-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun my/hide-line-numbers (orig-fun &rest args)
+    "Hide line numbers function used to be wrapped around sidebar tree buffer view."
+    (display-line-numbers-mode 0)
+    (apply orig-fun args))
+
+  (defun my/show-line-numbers (orig-fun &rest args)
+    "Show line numbers function used to be wrapped around sidebar tree buffer view."
+    (display-line-numbers-mode 1)
+    (apply orig-fun args))
+
+  (advice-add
+   'org-sidebar-tree-view-buffer
+   :around
+   #'my/hide-line-numbers)
+#+end_src
+*** Parenthesis colour matching
+#+begin_src emacs-lisp 
+  (use-package rainbow-delimiters
+    :delight
+    :hook (prog-mode . rainbow-delimiters-mode))
+#+end_src
+*** Highlight s-exp
+https://github.com/daimrod/highlight-sexp
+#+begin_src emacs-lisp 
+  (use-package highlight-sexp
+    :delight
+    :custom ((hl-sexp-background-color "#dcdcdc")
+             (hl-sexp-foreground-color 'nil)
+             (hl-sexp-face 'nil))
+    :hook (prog-mode . highlight-sexp-mode))
+#+end_src
+*** Scrolling
+One line at a time.
+#+begin_src emacs-lisp
+  (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
+#+end_src
+Don't accelerate scrolling
+#+begin_src emacs-lisp
+  (setq mouse-wheel-progressive-speed nil)
+#+end_src
+Scroll window under mouse
+#+begin_src emacs-lisp
+  (setq mouse-wheel-follow-mouse 't)
+#+end_src
+Keyboard scroll one line at a time
+#+begin_src emacs-lisp
+  (setq scroll-step 1)
+#+end_src
+*** yes/no => y/n
+Kiss, right?
+#+begin_src emacs-lisp
+  (fset 'yes-or-no-p 'y-or-n-p)
+#+end_src
+*** COMMENT Posframe
+Postframe can popup a frame at point.
+#+begin_src emacs-lisp
+  (use-package posframe)
+#+end_src
+** Run Emacs as a server
+It also seems that due to a timing issue, it is best to run server-start after persp-mode is turned on
+#+begin_src emacs-lisp
+(with-eval-after-load 'perspective
+  (add-hook 'persp-switch-hook #'server-start))
+#+end_src
+** Don't litter!
+#+begin_src emacs-lisp
+  (use-package no-littering
+    :config
+    (setq auto-save-file-name-transforms
+          `((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
+#+end_src
+** Recentf - Keep track of recently opened files
+Recentf is a minor mode that builds a list of recently opened files. This list is is automatically saved across sessions on exiting Emacs - you can then access this list through a command or the menu.
+
+#+begin_src emacs-lisp
+  (require 'recentf)
+  (add-to-list 'recentf-exclude no-littering-var-directory)
+  (add-to-list 'recentf-exclude no-littering-etc-directory)
+  (setq recentf-auto-cleanup 'never) ;; disable before we start recentf!
+  (recentf-mode 1)
+  (setq recentf-max-menu-items 100)
+  (setq recentf-max-saved-items 100)
+  (global-set-key "\C-x\ \C-r" 'recentf-open-files)
+  (run-at-time nil (* 5 60) 'recentf-save-list)
+#+end_src
+* Major mode configuration
+** Emacs Lisp
+#+begin_src emacs-lisp
+  (major-mode-hydra-define+ emacs-lisp-mode nil
+    ("Eval"
+     (("b" eval-buffer "buffer")
+      ("e" eval-defun "defun")
+      ("r" eval-region "region"))
+     "REPL"
+     (("I" ielm "ielm"))
+     "Test"
+     (("t" ert "prompt")
+      ("T" (ert t) "all")
+      ("F" (ert :failed) "failed"))
+     "Doc"
+     (("d" helpful-at-point "thing-at-pt")
+      ("f" describe-function "function")
+      ("v" describe-variable "variable")
+      ("i" info-lookup-symbol "info lookup"))))
+#+end_src
+** PDF tools
+https://github.com/politza/pdf-tools
+http://pragmaticemacs.com/emacs/view-and-annotate-pdfs-in-emacs-with-pdf-tools/
+#+begin_src emacs-lisp
+  (use-package pdf-tools
+    :delight
+    ; :straight `,(if (eq window-system 'x) '(:type built-in) 't)
+    :straight (:type built-in)
+    :magic ("%PDF" . pdf-view-mode)
+    :config
+    ;; initialise
+    (pdf-tools-install :no-query)
+    ;; open pdfs scaled to fit page
+    (setq-default pdf-view-display-size 'fit-page)
+    ;; automatically annotate highlights
+    (setq pdf-annot-activate-created-annotations t)
+    ;; use normal isearch
+    (define-key pdf-view-mode-map (kbd "C-s") 'isearch-forward))
+#+end_src
+** CSV mode
+https://elpa.gnu.org/packages/csv-mode.html
+#+begin_src emacs-lisp
+  (use-package csv-mode
+    :delight
+    ;:straight (:type built-in)
+  )
+#+end_src
+* Minor mode configuration
+** Perspective.el
+ The most important thing when working on multiple things is to maintain perspective!
+ https://github.com/nex3/perspective-el
+ #+begin_quote
+ Each perspective has its own buffer list and its own window layout. This makes it easy to work on many separate projects without getting lost in all the bffers. Switching to a perspective activates its window configuration, and when in a perspective, only its buffers are available (by default).
+
+ Each emacs frame has a distinct list of perspectives.
+
+ Perspective supports saving its state to a file, so long-lived work sessions may be saved and recovered as needed.
+ #+end_quote
+
+ #+begin_src emacs-lisp
+   (use-package perspective
+     :bind-keymap ("C-c p" . perspective-map)
+     :delight
+     :custom
+     (persp-sort 'created)
+     (persp-interactive-completion-function 'ivy-completing-read) ; breaks persp-sort
+     (persp-state-default-file "perspective")
+     :init
+     ;(add-hook 'before-init-hook #'persp-state-load)
+     :config
+     (require 'bs)
+     (persp-mode) ; To activate perspective use (persp-mode). This creates a single default main perspective
+     (add-hook 'kill-emacs-hook #'persp-state-save)
+     :bind (("C-x C-b" . (lambda (arg)
+                           (interactive "P")
+                           (if (fboundp 'persp-bs-show)
+                               (persp-bs-show arg)
+                             (bs-show "all")))) ; If given a prefix, show all
+            ("C-x b" . persp-counsel-switch-buffer) ; counsel shows a preview of the buffer to switch to
+            ("C-x k" . persp-kill-buffer*)))
+ #+end_src
+*** Something recommended by perspective
+ #+begin_src emacs-lisp
+   (setq display-buffer-alist
+         '((".*" (display-buffer-reuse-window display-buffer-same-window))))
+
+   (setq display-buffer-reuse-frames t)         ; reuse windows in other frames
+   (setq even-window-sizes nil)                 ; display-buffer: avoid resizing
+ #+end_src
+* EmacSQL
+https://github.com/skeeto/emacsql
+#+begin_src emacs-lisp
+  (use-package emacsql
+    :delight
+    :straight (:built-in t))
+#+end_src
+#+begin_src emacs-lisp
+  (use-package emacsql-sqlite
+    :delight
+    :straight (:built-in t))
+#+end_src
+* Git / version management / magit
+https://lists.gnu.org/archive/html/emacs-devel/2016-01/msg01802.html
+#+begin_src emacs-lisp 
+  (use-package magit
+    :delight
+    :custom (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+    :config
+    (start-process "git-fsck" nil "git" "git" "config" "--global" "transfer.fsckObjects" "true") 
+    ;(start-process "git-config-email" nil "git" "git" "config" "--global" "user.email" "user@example.com") 
+    ;(start-process "git-config-email" nil "git" "git" "config" "--global" "user.name" "user")
+    ;(my/leader-key-def "m" '(magit :which-key "magit"))
+
+    (with-eval-after-load 'general
+      (pretty-hydra-define+ my/hydra-leader ()
+	("Magit"
+	 (("m" (magit-status)
+	   "Status"))))))
+#+end_src
+** TODO Forge
+[ ] Ensure forge is loaded from guix on guix systems
+https://github.com/magit/forge
+#+begin_src emacs-lisp
+  (use-package forge 
+    :delight
+    ;:straight (:built-in t)
+    :after (magit)) ; create a token on github and put it in .authinfo
+#+end_src
+** TODO evil-magit
+#+begin_src emacs-lisp
+  ; (use-package evil-magit :after magit)
+#+end_src
+** TODO ghub
+#+begin_src emacs-lisp
+  ; (use-package ghub
+  ; )
+#+end_src
+** TODO magit-todos
+* Projects / Projectile / Play nicely with projects
+https://docs.projectile.mx/en/latest/
+#+begin_src emacs-lisp 
+  (use-package projectile
+    :bind-keymap ("C-c P" . projectile-command-map)
+    :delight
+    :custom ((projectile-completion-system 'ivy))
+    :init
+    (when (file-directory-p "~/projects")
+      (setq projectile-project-search-path '("~/projects")))
+
+    (when (eq (framep-on-display) 'w32)
+      (setq projectile-project-search-path '("c:/projects")))
+
+    (setq projectile-switch-project-action #'projectile-dired)
+    :config (projectile-mode))
+
+#+end_src
+#+begin_src emacs-lisp
+  (use-package counsel-projectile
+    :delight
+    :after (counsel projectile)
+    :config (counsel-projectile-mode))
+#+end_src
+** DONE If I switch projects, all the workspaces should reflect that too
+And the window focus and the buffer positions etc.
+https://github.com/bbatsov/persp-projectile
+#+begin_src emacs-lisp
+  (use-package persp-projectile
+    :delight
+    :after (perspective projectile)
+    ;:config (persp-mode)
+)
+#+end_src
+* configure projectile, perspective, persp-projectile and maybe shackle too.
+* Org-mode
+#+begin_src emacs-lisp
+  (use-package org
+    :delight
+    :straight (:type built-in)
+    :preface
+    (defun my/org-mode-setup ()
+      (org-indent-mode) ; indent text according to outline structure
+      (variable-pitch-mode 1) ; UI - use variable pitch fonts
+      (auto-fill-mode 0) ; don't automatically break lines exceeding current-fill-column
+      (visual-line-mode 1) ; instead of breaking lines exceeding current-fill-column, visually wrap them
+      <<faces-org>>
+      <<org-agenda-files>>
+      <<org-refile-targets>>
+      )
+    :hook ((org-mode . my/org-mode-setup))
+    ;:mode "\\.org\\'"
+    :mode-hydra 
+    (org-mode
+     ("Clock"
+      (("t" org-timer-start)
+       ("s" org-timer-stop)
+       ;; Need to be at timer
+       ("r" org-timer-set-timer)
+       ;; Print timer value to buffer
+       ("p" org-timer)
+       ("w" (org-clock-in '(4)))
+       ("o" org-clock-out)
+       ;; Visit the clocked task from any buffer
+       ("j" org-clock-goto)
+       ("c" org-capture)
+       ("l" org-capture-goto-last-stored))))
+    :custom
+    (org-catch-invisible-edits 'smart)
+    <<custom-org-babel>>
+    <<custom-org-ui>>
+    <<custom-org-diary>>
+    <<custom-org-notes>>
+  )
+#+end_src
+** TODO [#A] org-roam
+https://www.orgroam.com/manual.html
+Installation
+#+begin_src emacs-lisp
+  (use-package org-roam
+    :delight
+    :init (setq org-roam-directory my/org-roam-directory)
+    :hook (after-init . org-roam-mode)
+    :config
+    (setq org-roam-dailies-directory my/org-roam-dailies-directory)
+  
+    <<org-roam-daily-templates>>
+    (make-org-roam-doctor-checker
+     :name 'org-roam-doctor-broken-links
+     :description "Fix broken links."
+     :actions '(("d" . ("Unlink" . org-roam-doctor--remove-link))
+                ("r" . ("Replace link" . org-roam-doctor--replace-link))
+                ("R" . ("Replace link (keep label)" . org-roam-doctor--replace-link-keep-label)))))
+#+end_src
+*** I'll need a way for quickly capturing ideas.
+- [ ] https://takeonrules.com/2020/12/08/revisiting-hydra-menu-for-org-roam-lookup-in-emacs/
+Progfolio/doct
+
+Everything starts with an idea.
+I can either use org-capture (org)Capture
+or, (org-roam)Daily-notes
+Either way, this will be an inbox for processing later. In a gtd sense.
+I'm going to lean towards using org-roam for things like capture templates.
+#+begin_src emacs-lisp :noweb-ref org-roam-daily-templates
+  (setq org-roam-dailies-capture-templates
+        '(("d" "default" entry
+           #'org-roam-capture--get-point
+           "* %?"
+           :file-name "daily/%<%Y-%m-%d>"
+           :head "#+title: %<%Y-%m-%d>\n\n")
+          ("m" "meeting" entry
+           #'org-roam-capture--get-point
+           "* %?"
+           :file-name "daily/%<%Y-%m-%d>"
+           :head "#+meeting: %<%Y-%m-%d>\n"
+           :olp ("Meeting notes"))
+          ("l" "lab" entry
+           #'org-roam-capture--get-point
+           "* %?"
+           :file-name "daily/%<%Y-%m-%d>"
+           :head "#+title: %<%Y-%m-%d>\n"
+           :olp ("Lab notes"))
+          ("j" "journal" entry
+           #'org-roam-capture--get-point
+           "* %?"
+           :file-name "daily/%<%Y-%m-%d>"
+           :head "#+title: %<%Y-%m-%d>\n"
+           :olp ("Journal"))))
+#+end_src
+  
+*** I'll need a way for Permanently storing notes 
+Permanent notes are split into 2 categories
+- literature notes
+- concept notes
+**** 
+
+** DONE Agenda / Super Agenda
+*** TODO [#A] These are the files that are used to build the agenda
+https://orgmode.org/manual/Agenda-Files.html#Agenda-Files
+The files to be used for the agenda display
+#+begin_src emacs-lisp :noweb-ref org-agenda-files
+  (setq org-agenda-files
+        (append 
+         '("~/org/agenda")
+         `(,my/org-roam-directory)
+         `(,my/org-roam-dailies-directory)
+         (file-expand-wildcards "~/Projects/*/*.org") ;FIXME, projects will differ on other boxes, link this to projectile instead of hard-coding
+         (file-expand-wildcards "~/*/*.org")))
+#+end_src
+*** TODO Diary file
+Name of the file in which one's personal diary of dates is kept.
+   File to which to add new entries with the ‘i’ key in agenda and calendar.
+#+begin_src emacs-lisp :noweb-ref custom-org-diary :tangle no
+  (org-agenda-diary-file "~/org/diary")
+#+end_src
+*** TODO org-super-agenda
+This does not collect items, it only groups items that are collected by Org Agenda or org-ql
+https://github.com/alphapapa/org-super-agenda
+https://github.com/alphapapa/org-super-agenda/blob/master/examples.org
+#+begin_src emacs-lisp
+  (use-package org-super-agenda
+    :delight
+    ;:hook (org-mode . org-super-agenda-mode)
+    :custom
+    (org-super-agenda-groups
+     '(;; Each group has an implicit boolean OR operator between its selectors.
+       (:name "Today"  ; Optionally specify section name
+              :time-grid t  ; Items that appear on the time grid
+              :todo "TODAY")  ; Items that have this TODO keyword
+       (:name "Important"
+              ;; Single arguments given alone
+              :tag "bills"
+              :priority "A")
+       ;; Set order of multiple groups at once
+       (:order-multi (2 (:name "Shopping in town"
+                               ;; Boolean AND group matches items that match all subgroups
+                               :and (:tag "shopping" :tag "@town"))
+                        (:name "Food-related"
+                               ;; Multiple args given in list with implicit OR
+                               :tag ("food" "dinner"))
+                        (:name "Personal"
+                               :habit t
+                               :tag "personal")
+                        (:name "Space-related (non-moon-or-planet-related)"
+                               ;; Regexps match case-insensitively on the entire entry
+                               :and (:regexp ("space" "NASA")
+                                             ;; Boolean NOT also has implicit OR between selectors
+                                             :not (:regexp "moon" :tag "planet")))))
+       ;; Groups supply their own section names when none are given
+       (:todo "WAITING" :order 8)  ; Set order of this section
+       (:todo ("SOMEDAY" "TO-READ" "CHECK" "TO-WATCH" "WATCHING")
+              ;; Show this group at the end of the agenda (since it has the
+              ;; highest number). If you specified this group last, items
+              ;; with these todo keywords that e.g. have priority A would be
+              ;; displayed in that group instead, because items are grouped
+              ;; out in the order the groups are listed.
+              :order 9)
+       (:priority<= "B"
+                    ;; Show this section after "Today" and "Important", because
+                    ;; their order is unspecified, defaulting to 0. Sections
+                    ;; are displayed lowest-number-first.
+                    :order 1)
+       ;; After the last group, the agenda will display items that didn't
+       ;; match any of these groups, with the default order position of 99
+       :config
+       (org-super-agenda-mode)
+  )))
+#+end_src
+** TODO Re-filing
+#+begin_src emacs-lisp :noweb-ref org-refile-targets
+  (setq org-refile-targets
+        '((nil :maxlevel . 1)
+          (org-agenda-files :maxlevel .1)))
+#+end_src
+** TODO Export
+** TODO Modules
+** TODO org-noter
+#+begin_src emacs-lisp
+  (use-package org-noter
+    :delight)
+#+end_src
+*** TODO Notes
+#+begin_src emacs-lisp :noweb-ref custom-org-notes :tangle no
+  (org-agenda-default-notes-file "~/org/notes")
+#+end_src
+** TODO org-babel
+*** DONE Don't confirm
+#+begin_src emacs-lisp
+  (setq org-confirm-babel-evaluate nil)
+#+end_src
+*** TODO Languages
+I'd like to be able to see results from shell scripts etc. in my org buffers
+#+begin_src emacs-lisp :noweb-ref custom-org-babel :tangle no
+  (org-babel-load-languages
+   '(
+     ;; (Awk . t)
+     ;; (C . t)
+     ;; (Ditaa . t)
+     ;; (Dot . t)
+     (emacs-lisp . t)
+     ;; (Java . t)
+     ;; (Javascript . t)
+     ;; (Lisp . t)
+     ;; (Python . t)
+     ;; (PlantUml . t)
+     ;; (Ruby . t)
+     ;; (Scheme . t)
+     (shell . t)
+     ;; (SQL . t)
+     ;; (Sqlite . t)
+     ))
+#+end_src
+*** DONE Templates
+Org mode template keywords, like 
+
+| Example | Result                 |
+|---------+------------------------|
+| <el     | #+begin_src emacs-lisp |
+| <sh     | #+begin_src shell      |
+| <I      | #+include: "guix.org"  |
+| <L      | #+latex:               |
+| <H      | #+html:                |
+| <A      | #+ascii:               |
+| <i      | #+index:               |
+
+#+begin_src emacs-lisp
+  (use-package org-tempo
+    :delight
+    :straight (:type built-in)
+    :config
+    (add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+    (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+    (add-to-list 'org-structure-template-alist '("py" . "src python")))
+#+end_src
+*** DONE Async
+When I'm running those blocks, I'd like the option for them to run async
+#+begin_src emacs-lisp
+  (use-package ob-async
+    :delight
+    :config
+    (setq ob-async-no-async-languages-alist '("ipython")))
+#+end_src
+** TODO org-sidebar
+#+begin_src emacs-lisp
+  (use-package org-sidebar
+    :delight
+    :preface
+    (defun my/org-today-sidebar (source-buffer)
+      (let ((display-buffer
+             (generate-new-buffer (format "TODAY org-sidebar<%s>" (buffer-name source-buffer))))
+            (title (propertize (concat "Today's deadlines in: " (buffer-name source-buffer))
+                               'help-echo "Items to-do today")))
+        (with-current-buffer display-buffer
+          (setf org-sidebar-source-buffer source-buffer))
+        (save-window-excursion
+          ;; `org-ql-search' displays the buffer, but we don't want to do that here.
+          (org-ql-search source-buffer
+            '(and (not (done))
+                  (or (scheduled :to today) (deadline :to today))) ; should be scheduled today / deadline today
+	  
+            :narrow t
+            :sort '(priority date)
+            :super-groups '((:auto-todo))
+            :buffer display-buffer
+            :title title))
+        display-buffer))
+  
+    ;; (defun my/org-today-sidebar ()
+    ;; "Show my Org Today Sidebar."
+    ;; (interactive)
+    ;; (org-sidebar
+    ;; :sidebars (make-org-sidebar
+    ;; 		:name "Today"
+    ;; 		:description "Today items"
+    ;; 		:items (org-ql (org-agenda-files)
+    ;; 			(and (not (done))
+    ;; 				(or (deadline auto)
+    ;; 				    (scheduled :to today)))
+    ;; 			:action element-with-markers)
+    ;; 		:super-groups '((:time-grid t)
+    ;; 				(:name "Overdue" :scheduled past :deadline past)
+    ;; 				(:name "Due today" :scheduled today :deadline today)
+    ;; 				(:tag "bills")
+    ;; 				(:priority "A")
+    ;; 				(:name "Non-tasks"
+    ;; 					:todo nil)))))
+  
+    :custom
+    (org-sidebar-side 'left)
+    (org-sidebar-default-fns '(org-sidebar-tree-view-buffer
+                               my/org-today-sidebar
+                               org-sidebar--upcoming-items
+                               org-sidebar--todo-items))
+    :bind (([M-tab] . org-sidebar-toggle))
+                                          ; :hook (org-mode . my/org-today-sidebar)
+  )
+#+end_src
+** TODO [#A] Drill
+** TODO Habit
+** TODO Journal
+** TODO org-ref
+https://github.com/jkitchin/org-ref
+** UI Tweaks
+*** Customisations
+#+begin_src emacs-lisp :noweb-ref custom-org-ui :tangle no
+  (org-ellipsis " ➠")
+  (org-hide-emphasis-markers t)
+  (evil-auto-indent nil)
+  (org-src-window-setup 'current-window) ; open org-src blocks in current window
+#+end_src
+*** Faces
+    TIP: use describe-face org- if you think something isn't looking its best
+**** Replace list hyphen with dot
+#+begin_src emacs-lisp :noweb-ref faces-org :tangle no
+  (font-lock-add-keywords 'org-mode
+                          '(("^ *\\([-]\\) "
+                             (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "*"))))))
+#+end_src
+**** Ensure code blocks etc use fixed width fonts
+#+begin_src emacs-lisp :noweb-ref faces-org :tangle no
+  (progn
+    (set-face-attribute 'org-block nil :inherit 'fixed-pitch :background "grey")
+    (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-indent nil :inherit '(org-hide fixed-pitch))
+    (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+    (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+    (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+    (set-face-attribute 'org-table nil :weight 'semi-bold :inherit 'fixed-pitch)
+
+    (set-face-attribute 'org-level-1 nil :height 1.75)
+    (set-face-attribute 'org-level-2 nil :height 1.5)
+    (set-face-attribute 'org-level-3 nil :height 1.25)
+    (set-face-attribute 'org-level-4 nil :height 1.1)
+
+    (set-face-attribute 'org-document-title nil :height 2.0)
+  )
+#+end_src
+*** Bullets
+#+begin_src emacs-lisp
+  (use-package org-bullets
+    :delight
+    :after org
+    :hook (org-mode . org-bullets-mode)
+    :custom (org-bullets-bullet-list '("➊" "➋" "➌" "➍" "➎" "➏" "➐" "➑" "➒")))
+#+end_src
+** TODO org-download
+#+begin_src emacs-lisp
+  (use-package org-download
+    :delight
+    :after org
+    :bind
+    (:map org-mode-map
+          (("s-Y" . org-download-screenshot)
+           ("s-y" . org-download-yank))))
+#+end_src
+* notdeft
+Could be used to search org-roam notes
+https://tero.hasu.is/notdeft/
+* Configure a dashboard
+https://github.com/emacs-dashboard/emacs-dashboard ; 
+#+begin_src emacs-lisp
+  (use-package dashboard
+    :delight
+    :demand t
+    ;:after (counsel perspective)
+    :config
+    (dashboard-setup-startup-hook)
+    (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+    (setq dashboard-banner-logo-title "Welcome to GNU Emacs")
+    (setq dashboard-startup-banner 'logo)
+    (setq dashboard-items '((agenda . 10)
+                            (projects . 10)
+                            (bookmarks . 10)
+                            (recents . 10)
+                            (registers . 10)))
+    (setq dashboard-week-agenda t)
+    (setq dashboard-org-agenda-categories '("Tasks" "Appointments"))
+    (setq dashboard-filter-agenda-entry 'dashboard-no-filter-agenda)
+    (setq dashboard-set-heading-icons t)
+    (setq dashboard-set-file-icons t)
+    (setq dashboard-set-navigator t)
+    ;; Format: "(icon title help action face prefix suffix)"
+    (setq dashboard-navigator-buttons
+          `(;; line1
+            ((,(all-the-icons-octicon "mark-github" :height 1.1 :v-adjust 0.0)
+              "Homepage"
+              "Browse homepage"
+              (lambda (&rest _) (browse-url "https://github.com/bluekeys")))
+             (,(all-the-icons-faicon "linkedin" :height 1.1 :v-adjust 0.0)
+              "Linkedin"
+              ""
+              (lambda (&rest _) (browse-url "https://quixotech.uk")))
+             ("⚑" nil "Show flags" (lambda (&rest _) (message "flag")) error)
+             ("★" "Star" "Show stars" (lambda (&rest _) (show-stars)) warning)
+             ("?" "" "?/h" #'show-help nil "<" ">"))
+            ;; line 2 ()
+            ))
+    (setq dashboard-set-footer nil)
+    (setq dashboard-set-init-info t)
+    (setq dashboard-projects-switch-function 'projectile-persp-switch-project)
+                                          ; In addition to the above, configure initial-buffer-choice to show Dashboard in frames created with emacsclient -c as follows:
+    )
+#+end_src
+** Create a shortcut function to switch to the dashboard
+#+begin_src emacs-lisp
+  (defun my/dashboard-switch ()
+    "Switch to dashboard and refresh content"
+    (interactive)
+    (persp-switch-to-buffer "*dashboard*")
+    (dashboard-refresh-buffer))
+
+  (with-eval-after-load 'general
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Dashboard"
+       (("D" (my/dashboard-switch)
+         "Goto *dashboard*")))))
+#+end_src
+* Flashcards
+https://orgmode.org/worg/org-contrib/org-drill.html
+#+begin_src emacs-lisp 
+  (use-package org-drill
+    :delight
+    :config
+    (setq org-drill-add-random-noise-to-intervals-p t))
+#+end_src
+* eReader
+https://depp.brause.cc/nov.el/
+#+begin_src emacs-lisp 
+(use-package nov
+  :delight
+  :config
+  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+  (setq nov-text-width 63))
+#+end_src
+** TODO Make nov behave like info
+  Key  Purpose    
+  [ and ]  Previous / next node    
+  l and r  Go back / forward in history    
+  n and p  Previous / next sibling node    
+  u  Goes up one level to a parent node    
+  SPC  Scroll one screen at a time    
+  TAB  Cycles through cross-references and links    
+  RET  Opens the active link    
+  m  Prompts for a menu item name and opens    
+    it    
+  q  Closes the info browser    
+* Programming
+** Lisp
+*** Handle the parenthesis with style
+Paredit makes handling lisp expressions much, much easier
+Cheatsheet: http://www.emacswiki.org/emacs/PareditCheatsheet
+#+begin_src emacs-lisp 
+  (use-package paredit
+    :delight
+    :hook ((emacs-lisp-mode
+            eval-expression-minibuffer-setup
+            ielm-mode
+            clojure-mode
+            lisp-mode
+            lisp-interaction-mode
+            scheme-mode
+            geiser-repl-mode) 
+           . enable-paredit-mode)) 
+#+end_src
+*** TODO Clojure (for the brave!)
+#+begin_src emacs-lisp 
+  ;; key bindings and code colorization for Clojure
+  ;; "When several buffers visit identically-named files,
+  ;; Emacs must give the buffers distinct names. The usual method
+  ;; for making buffer names unique adds ‘<2>’, ‘<3>’, etc. to the end
+  ;; of the buffer names (all but one of them).
+  ;; The forward naming method includes part of the file's directory
+  ;; name at the beginning of the buffer name
+  ;; https://www.gnu.org/software/emacs/manual/html_node/emacs/Uniquify.html
+  ;; (use-package uniquify
+  ;; :config
+  ;; (setq uniquify-buffer-name-style 'forward))
+
+  ;; https://github.com/clojure-emacs/clojure-mode
+  ;; syntax hilighting for midje
+  (use-package clojure-mode
+    :delight
+    :config
+    (lambda ()
+      (setq inferior-lisp-program "lein repl")
+      (font-lock-add-keywords
+       nil
+       '(("(\\(facts?\\)"
+          (1 font-lock-keyword-face))
+         ("(\\(background?\\)"
+          (1 font-lock-keyword-face))))
+      (define-clojure-indent (fact 1))
+      (define-clojure-indent (facts 1))
+      (rainbow-delimiters-mode)))
+
+  ;; extra syntax highlighting for clojure
+  (use-package clojure-mode-extra-font-locking)
+
+  ;; integration with a Clojure REPL
+  ;; https://github.com/clojure-emacs/cider
+  (use-package cider
+    :delight
+    :config
+    ;; provides minibuffer documentation for the code you're typing into the repl
+    (add-hook 'cider-mode-hook 'eldoc-mode)
+
+    ;; go right to the REPL buffer when it's finished connecting
+    (setq cider-repl-pop-to-buffer-on-connect t)
+
+    ;; When there's a cider error, show its buffer and switch to it
+    (setq cider-show-error-buffer t)
+    (setq cider-auto-select-error-buffer t)
+
+    ;; Where to store the cider history.
+    (setq cider-repl-history-file "~/.emacs.d/cider-history")
+
+    ;; Wrap when navigating history.
+    (setq cider-repl-wrap-history t)
+
+    ;; enable paredit in your REPL
+    (add-hook 'cider-repl-mode-hook 'paredit-mode)
+
+    ;; Use clojure mode for other extensions
+    (add-to-list 'auto-mode-alist '("\\.edn$" . clojure-mode))
+    (add-to-list 'auto-mode-alist '("\\.boot$" . clojure-mode))
+    (add-to-list 'auto-mode-alist '("\\.cljs.*$" . clojure-mode))
+    (add-to-list 'auto-mode-alist '("lein-env" . enh-ruby-mode))
+    ;; key bindings
+    ;; these help me out with the way I usually develop web apps
+  (defun cider-start-http-server ()
+    (interactive)
+    (cider-load-current-buffer)
+    (let ((ns (cider-current-ns)))
+      (cider-repl-set-ns ns)
+      (cider-interactive-eval (format "(println '(def server (%s/start))) (println 'server)" ns))
+      (cider-interactive-eval (format "(def server (%s/start)) (println server)" ns))))
+
+  (defun cider-refresh ()
+    (interactive)
+    (cider-interactive-eval (format "(user/reset)")))
+
+  (defun cider-user-ns ()
+    (interactive)
+    (cider-repl-set-ns "user"))
+
+  (eval-after-load 'cider
+    '(progn
+       (define-key clojure-mode-map (kbd "C-c C-v") 'cider-start-http-server)
+       (define-key clojure-mode-map (kbd "C-M-r") 'cider-refresh)
+       (define-key clojure-mode-map (kbd "C-c u") 'cider-user-ns)
+       (define-key cider-mode-map (kbd "C-c u") 'cider-user-ns))))
+#+end_src
+*** Play nice with html
+Edit html like paredit
+#+begin_src emacs-lisp 
+  (use-package tagedit
+    :delight)
+#+end_src
+* org-webring
+* bufler.el
+* show unstaged changes in the fringe
+* COMMENT proced
+https://www.emacswiki.org/emacs/ProcEd
+* Emacs rocks episode 11
+https://github.com/swank-js/swank-js
+* COMMENT EAF
+https://emacsconf.org/2020/talks/34/
+#+begin_src emacs-lisp
+  (use-package eaf
+    ;:load-path "~/.emacs.d/site-lisp/emacs-application-framework" ; Set to "/usr/share/emacs/site-lisp/eaf" if installed from AUR
+    :init
+    (use-package epc :defer t)
+    (use-package ctable :defer t)
+    (use-package deferred :defer t)
+    (use-package s :defer t)
+    :custom
+    (eaf-browser-continue-where-left-off t)
+    :config
+    (eaf-setq eaf-browser-enable-adblocker "true")
+    (eaf-bind-key scroll_up "C-n" eaf-pdf-viewer-keybinding)
+    (eaf-bind-key scroll_down "C-p" eaf-pdf-viewer-keybinding)
+    (eaf-bind-key take_photo "p" eaf-camera-keybinding)
+    (eaf-bind-key nil "M-q" eaf-browser-keybinding)) ;; unbind, see more in the Wiki
+#+end_src
+* COMMENT EPC
+#+begin_src emacs-lisp
+  (use-package epc)
+#+end_src
+* COMMENT ctable
+#+begin_src emacs-lisp
+  (use-package ctable)
+#+end_src
+* Lots and lots of ideas were taken from elsewhere.
+- https://github.com/raxod502/radian
