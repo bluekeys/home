@@ -224,11 +224,11 @@ Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-pac
 #+begin_src emacs-lisp :noweb-ref hydra-text-scale
   (with-eval-after-load 'hydra
       (message "Defining text scale hydra")
-      (defhydra my/hydra-text-scale (:color teal)
+      (defhydra my/hydra-text-scale (:color cyan)
         "scale text"
         ("j" text-scale-increase "in")
         ("k" text-scale-decrease "out")
-        ("q" hydra-pop "exit"))
+        ("SPC" hydra-pop "back"))
 
       (with-eval-after-load 'major-mode-hydra
         (pretty-hydra-define+ my/hydra-leader ()
@@ -237,6 +237,24 @@ Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-pac
                    (my/hydra-text-scale/body)
                    (hydra-push '(my/hydra-leader/body))) 
              "scale text"))))))
+#+end_src
+**** Misc
+#+begin_src emacs-lisp :noweb-ref hydra-text-scale
+  (with-eval-after-load 'hydra
+      (message "Defining misc hydra")
+      (defhydra my/hydra-misc (:color teal)
+        "Misc"
+        ("h" (find-file "~/Projects/home/emacs.org") "emacs.org")
+        ("c" org-roam-capture "Capture")
+)
+
+      (with-eval-after-load 'major-mode-hydra
+        (pretty-hydra-define+ my/hydra-leader ()
+          ("Misc"
+           (("v" (progn 
+                   (my/hydra-misc/body)
+                   (hydra-push '(my/hydra-leader/body))) 
+             "Misc"))))))
 #+end_src
 **** Straight
 #+begin_src emacs-lisp :noweb-ref hydra-straight-helper
@@ -411,6 +429,23 @@ Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-pac
        (("g" (guix-popup)
 	 "Guix")))))
 #+end_src
+**** Notes
+***** Quick Capture
+An inbox for reminders of ideas or meetings that will be processed later on, or trashed.
+
+| Add a note to a file           | org-roam-find-file        |
+| Force db cache refresh         | org-roam-db-rebuild-cache |
+| Link to another org document   | org-roam-insert           |
+| Show backlinks to current note | org-roam                  |
+| Visualize links                |                           |
+| Add tag                        |                           |
+| Add title                      |                           |
+***** Permanent Notes 
+****** Literature notes
+Brief annotations on a particular source, there's a link between the source and the note.
+****** Concept notes
+These are independent notes, they need to be self-explanatory and detailed.
+
 ** Help
 https://github.com/Wilfred/helpful
 Helpful is an alternative to the built-in Emacs help that provides much more contextual information.
@@ -840,8 +875,8 @@ I don't think dialog boxes are my style.
 #+end_src
 *** Frame transparency
 #+begin_src emacs-lisp
-  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-  (add-to-list 'default-frame-alist '(alpha . (90 . 90 )))
+  (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+  (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
   (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
   (add-to-list 'default-frame-alist '(fullscreen . maximized))
 #+end_src
@@ -932,6 +967,7 @@ It also seems that due to a timing issue, it is best to run server-start after p
   (add-hook 'persp-switch-hook #'server-start))
 #+end_src
 ** Don't litter!
+https://github.com/emacscollective/no-littering
 #+begin_src emacs-lisp
   (use-package no-littering
     :config
@@ -1224,7 +1260,7 @@ I'm going to lean towards using org-roam for things like capture templates.
 Permanent notes are split into 2 categories
 - literature notes
 - concept notes
-**** 
+*** 
 
 ** DONE Agenda / Super Agenda
 *** TODO [#A] These are the files that are used to build the agenda
@@ -1489,50 +1525,43 @@ https://github.com/jkitchin/org-ref
 * notdeft
 Could be used to search org-roam notes
 https://tero.hasu.is/notdeft/
-* Configure a dashboard
-https://github.com/emacs-dashboard/emacs-dashboard ; 
+* A dashboard
+https://github.com/emacs-dashboard/emacs-dashboard 
+
+This is the first thing I see when I switch on my laptop. I would like it to be very focussed.
+
+Ideally, I would see a welcome message, goals according to priority
+
+- [ ] No need for a logo
+- [ ] No need for a welcome message
+- [ ] Goals clearly visible
+- [ ] Tasks, prioritised and visible
+- [ ] Upcoming appointments
+- [ ] Maybe emacs packages loaded message
+- [ ] Maybe links to my site or github
+** Inhibit the standard emacs startup screen
+This will show Dashboard in frames created with emacsclient -c
+
+#+begin_src emacs-lisp
+  (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+#+end_src
+** Configure the dashboard
 #+begin_src emacs-lisp
   (use-package dashboard
     :delight
-    :demand t
-    ;:after (counsel perspective)
+    :custom (dashboard-page-separator "\n\n\n")
     :config
     (dashboard-setup-startup-hook)
-    (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
-    (setq dashboard-banner-logo-title "Welcome to GNU Emacs")
-    (setq dashboard-startup-banner 'logo)
     (setq dashboard-items '((agenda . 10)
-                            (projects . 10)
-                            (bookmarks . 10)
                             (recents . 10)
                             (registers . 10)))
+    (setq dashboard-set-init-info t)
     (setq dashboard-week-agenda t)
     (setq dashboard-org-agenda-categories '("Tasks" "Appointments"))
     (setq dashboard-filter-agenda-entry 'dashboard-no-filter-agenda)
     (setq dashboard-set-heading-icons t)
     (setq dashboard-set-file-icons t)
-    (setq dashboard-set-navigator t)
-    ;; Format: "(icon title help action face prefix suffix)"
-    (setq dashboard-navigator-buttons
-          `(;; line1
-            ((,(all-the-icons-octicon "mark-github" :height 1.1 :v-adjust 0.0)
-              "Homepage"
-              "Browse homepage"
-              (lambda (&rest _) (browse-url "https://github.com/bluekeys")))
-             (,(all-the-icons-faicon "linkedin" :height 1.1 :v-adjust 0.0)
-              "Linkedin"
-              ""
-              (lambda (&rest _) (browse-url "https://quixotech.uk")))
-             ("⚑" nil "Show flags" (lambda (&rest _) (message "flag")) error)
-             ("★" "Star" "Show stars" (lambda (&rest _) (show-stars)) warning)
-             ("?" "" "?/h" #'show-help nil "<" ">"))
-            ;; line 2 ()
-            ))
-    (setq dashboard-set-footer nil)
-    (setq dashboard-set-init-info t)
-    (setq dashboard-projects-switch-function 'projectile-persp-switch-project)
-                                          ; In addition to the above, configure initial-buffer-choice to show Dashboard in frames created with emacsclient -c as follows:
-    )
+    (setq dashboard-set-footer nil))
 #+end_src
 ** Create a shortcut function to switch to the dashboard
 #+begin_src emacs-lisp

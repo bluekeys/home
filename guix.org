@@ -5,3 +5,4 @@
 #+begin_src shell
 guix install emacs-exwm arandr xrandr
 #+end_src
+* Channel
