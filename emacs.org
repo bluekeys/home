@@ -1558,7 +1558,7 @@ This will show Dashboard in frames created with emacsclient -c
     (setq dashboard-set-init-info t)
     (setq dashboard-week-agenda t)
     (setq dashboard-org-agenda-categories '("Tasks" "Appointments"))
-    (setq dashboard-filter-agenda-entry 'dashboard-no-filter-agenda)
+    (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-time)
     (setq dashboard-set-heading-icons t)
     (setq dashboard-set-file-icons t)
     (setq dashboard-set-footer nil))
