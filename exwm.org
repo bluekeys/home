@@ -1,11 +1,15 @@
 #+TITLE: Literate EXWM Config
+
 #+PROPERTY: header-args            :noweb no-export :comments both :results silent :mkdirp no 
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.exwm
 * OS packages
+Here are the packages I include when I'm using exwm
+
 ** Guix
 #+begin_src shell
 guix install emacs-exwm xrandr arandr dunst autorandr
 #+end_src
+
 * Functions
 ** Hooks
 *** EXWM init
