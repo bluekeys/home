@@ -242,8 +242,9 @@ This library plays well with evil and use-package
 
         (with-eval-after-load 'all-the-icons
             (defvar my/hydra-leader--title (s-concat
-                                            (all-the-icons-faicon "medkit" "Leader" 1 -0.05)
-                                            "Title")))
+                                            (all-the-icons-faicon "magic" "Leader" 0 0) " : Magic menu")))
+
+;(insert)
 
         (pretty-hydra-define+ my/hydra-leader
           (:title my/hydra-leader--title :color teal :quit-key "SPC")

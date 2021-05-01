@@ -13,12 +13,13 @@ guix install emacs-exwm xrandr arandr dunst autorandr
 * Functions
 ** Hooks
 *** EXWM init
-Land on worspace 0 on startup
+I've been confused when I don't start on workspace 1
 #+begin_src emacs-lisp
   (defun my/exwm-init-hook ()
                                         ;(my/run-in-background "nm-applet")
-    (exwm-workspace-switch-create 0))
+    (exwm-workspace-switch-create 1))
 #+end_src
+
 ** Helpers
 *** Set wallpaper
 Make sure you grab the wallpaper first, also, relies on feh application being installed

@@ -3,7 +3,18 @@
 #+PROPERTY: header-args            :noweb no-export :comments both :results silent :mkdirp no 
 #+PROPERTY: header-args:emacs-lisp :tangle /etc/config.scm
 
-* Original copy from disk
+* Useful notes from irc
+<sneek> bluekeys, lfam says: Emacs service:
+	<https://git.dthompson.us/dotfiles.git/tree/dotfiles/.config/shepherd/init.scm>
+	This is for unprivileged shepherd run by your user, not the system
+<bluekeys> Brill thanks sneek. Thanks lfam.  [22:30]
+ERC> 
+
+exec sway
+or
+dbus-start-session sway
+
+* Modules
 #+begin_src scheme
   (use-modules (guix) (gnu))
   (use-modules (gnu services)
@@ -29,14 +40,81 @@
   (use-modules (gnu packages version-control))
   (use-modules (gnu system pam))
   (use-modules (gnu system keyboard))
+#+end_src
 
+* Service Modules
+#+begin_src scheme
   (use-service-modules admin base networking ssh)
+#+end_src
 
+* Log files
+#+begin_src scheme
   (define my-log-files
     ;; Log files that I want to rotate
-    '("/var/log/mcron.log" "/var/log/slim-vt7.log")
-    )
+    '("/var/log/mcron.log" "/var/log/slim-vt7.log"))
+#+end_src
 
+* Users
+#+begin_src scheme
+  (define my-users
+    ;; I enjoy naming my user user
+    (cons* (user-account
+                      (name "user")
+                      (comment "user")
+                      (group "users")
+                      (home-directory "/home/user")
+                      (supplementary-groups
+                        '("docker" "wheel" "netdev" "audio" "video" "lp")))
+                    %base-user-accounts))
+#+end_src
+
+* Packages
+#+begin_src scheme
+  (define my-packages
+    (append
+     (list
+    ;;; Fonts
+      fontconfig
+      gs-fonts
+      font-dejavu
+      font-google-noto
+      font-gnu-freefont-ttf
+    ;;; Emacs
+                                          ;emacs-all-the-icons
+                                          ;emacs-use-package
+                                          ;emacs-doom-themes
+                                          ;emacs-doom-modeline
+                                          ;emacs-guix
+                                          ;emacs-next
+                                          ;emacs-vterm
+    ;;; Compilers and interpreters
+                                          ;guile-3.0
+    ;;; Window Manager
+      emacs
+      emacs-exwm
+      emacs-xelb
+      arandr
+      xrandr
+    ;;; Compositor
+                                          ;     picom
+    ;;; Internet
+      icecat
+      ungoogled-chromium
+    ;;; Misc
+      ;;curl
+      ;;git
+      ;;keepassxc
+      ;;sicp ; https://guix.gnu.org/cookbook/en/guix-cookbook.html
+      ;;stow
+      ;;unzip
+    ;;; For https access
+      (specification->package "nss-certs")) 
+     %base-packages))
+#+end_src
+
+* Operating system definition
+#+begin_src scheme
+  ; 
   (operating-system
     (host-name "wreck-it")
     (timezone "Europe/London")
@@ -44,6 +122,7 @@
     (keyboard-layout (keyboard-layout "gb"
                      #:model "thinkpad"
                      #:options '("ctrl:nocaps"))) ; for the console
+
     ;;(keyboard-layout (keyboard-layout "gb"))
     ;; (skeletons
     ;;  `((".bashrc" ,(plain-file "bashrc" "echo Hello\n"))
@@ -51,55 +130,13 @@
     ;;                                       "(use-modules (ice-9 readline))
     ;;                                        (activate-readline)"))))
 
-    (users (cons* (user-account
-                    (name "user")
-                    (comment "user")
-                    (group "users")
-                    (home-directory "/home/user")
-                    (supplementary-groups
-                      '("docker" "wheel" "netdev" "audio" "video" "lp")))
-                  %base-user-accounts))
+    (users my-users)
+
     (name-service-switch %mdns-host-lookup-nss)
-    (packages
-      (append
-       (list
-  ;;; Fonts
-        fontconfig
-        gs-fonts
-        font-dejavu
-        font-google-noto
-        font-gnu-freefont-ttf
-  ;;; Emacs
-        ;emacs-all-the-icons
-        ;emacs-use-package
-        ;emacs-doom-themes
-        ;emacs-doom-modeline
-        ;emacs-guix
-        ;emacs-next
-        ;emacs-vterm
-  ;;; Compilers and interpreters
-        ;guile-3.0
-  ;;; Window Manager
-        emacs
-        ;emacs-restart-emacs
-        emacs-exwm
-        emacs-xelb
-        ;xrandr
-  ;;; Compositor
-  ;     picom
-  ;;; Internet
-        ;;icecat
-        ;ungoogled-chromium
-  ;;; Misc
-        ;;curl
-        ;;git
-        ;;keepassxc
-        ;;sicp ; https://guix.gnu.org/cookbook/en/guix-cookbook.html
-        ;;stow
-        ;;unzip
-  ;;; For https access
-        (specification->package "nss-certs")) 
-       %base-packages))
+
+    (packages my-packages)
+
+
     (services
       (cons*
        (simple-service 'editor-config-service session-environment-service-type '(("EDITOR" . "emacsclient"))) ; https://wikemacs.org/wiki/Emacs_server
@@ -205,7 +242,6 @@
 
 #+end_src
 
-* 
 * Guix packages
 #+begin_src shell
 guix install emacs-exwm arandr xrandr
