@@ -1,7 +1,7 @@
 #+TITLE: Literate Guix Config
 
 #+PROPERTY: header-args            :noweb no-export :comments both :results silent :mkdirp no 
-#+PROPERTY: header-args:emacs-lisp :tangle /etc/config.scm
+#+PROPERTY: header-args:scheme     :tangle ~/Projects/home/config.scm
 
 * Useful notes from irc
 <sneek> bluekeys, lfam says: Emacs service:
@@ -16,30 +16,41 @@ dbus-start-session sway
 
 * Modules
 #+begin_src scheme
-  (use-modules (guix) (gnu))
-  (use-modules (gnu services)
+  (use-modules (gnu)
+               (guix))
+
+  (use-modules (srfi srfi-1) ; for 'remove' - https://guix.gnu.org/manual/en/html_node/X-Window.html
+               (gnu services)
                (gnu services auditd)
                (gnu services desktop)
+               (gnu services xorg)
                (gnu services docker)
                (gnu services messaging)
                (gnu services pm)
-               (gnu services xorg)
-               (srfi srfi-1)) ; for 'remove' - https://guix.gnu.org/manual/en/html_node/X-Window.html
-  (use-modules (gnu packages emacs))
-  (use-modules (gnu packages emacs-xyz))
-  (use-modules (gnu packages compression))
-  (use-modules (gnu packages curl))
-  (use-modules (gnu packages fonts))
-  (use-modules (gnu packages fontutils))
-  (use-modules (gnu packages ghostscript))
-  (use-modules (gnu packages gnuzilla))
-  (use-modules (gnu packages guile))
-  (use-modules (gnu packages package-management))
-  (use-modules (gnu packages password-utils))
-  (use-modules (gnu packages scheme))
-  (use-modules (gnu packages version-control))
-  (use-modules (gnu system pam))
-  (use-modules (gnu system keyboard))
+               (gnu system pam)
+               (gnu system keyboard))
+
+  (use-package-modules emacs
+                       emacs-xyz
+                       compression
+                       curl
+                       fonts
+                       fontutils
+                       ghostscript
+                       gnuzilla
+                       guile
+                       package-management
+                       password-utils
+                       scheme
+                       wm
+                       video
+                       certs
+                       terminals
+                       disk
+                       xdisorg
+                       web-browsers
+                       version-control)
+
 #+end_src
 
 * Service Modules
@@ -70,51 +81,87 @@ dbus-start-session sway
 
 * Packages
 #+begin_src scheme
-  (define my-packages
-    (append
-     (list
-    ;;; Fonts
-      fontconfig
-      gs-fonts
-      font-dejavu
-      font-google-noto
-      font-gnu-freefont-ttf
-    ;;; Emacs
-                                          ;emacs-all-the-icons
-                                          ;emacs-use-package
-                                          ;emacs-doom-themes
-                                          ;emacs-doom-modeline
-                                          ;emacs-guix
-                                          ;emacs-next
-                                          ;emacs-vterm
-    ;;; Compilers and interpreters
-                                          ;guile-3.0
-    ;;; Window Manager
-      emacs
-      emacs-exwm
-      emacs-xelb
-      arandr
-      xrandr
-    ;;; Compositor
-                                          ;     picom
-    ;;; Internet
-      icecat
-      ungoogled-chromium
-    ;;; Misc
-      ;;curl
-      ;;git
-      ;;keepassxc
-      ;;sicp ; https://guix.gnu.org/cookbook/en/guix-cookbook.html
-      ;;stow
-      ;;unzip
-    ;;; For https access
-      (specification->package "nss-certs")) 
-     %base-packages))
+    (define my-packages
+      (append
+       (list
+        sway
+        swaybg
+        swayidle
+        swaylock
+        bemenu
+        vim
+        ranger
+        termite
+        luakit
+        youtube-dl
+        mpv
+        nss-certs
+        git
+
+      ;;; Fonts
+        fontconfig
+        gs-fonts
+        font-dejavu
+        font-google-noto
+        font-gnu-freefont-ttf
+      ;;; Emacs
+                                            ;emacs-all-the-icons
+                                            ;emacs-use-package
+                                            ;emacs-doom-themes
+                                            ;emacs-doom-modeline
+                                            ;emacs-guix
+                                            ;emacs-next
+                                            ;emacs-vterm
+      ;;; Compilers and interpreters
+                                            ;guile-3.0
+      ;;; Window Manager
+        emacs
+        ;;emacs-exwm
+        ;;emacs-xelb
+        ;;arandr
+        ;;xrandr
+      ;;; Compositor
+                                            ;     picom
+      ;;; Internet
+        icecat
+        ;;ungoogled-chromium
+      ;;; Misc
+        ;;curl
+        ;;git
+        ;;keepassxc
+        ;;sicp ; https://guix.gnu.org/cookbook/en/guix-cookbook.html
+        ;;stow
+        ;;unzip
+      ;;; For https access
+        (specification->package "nss-certs")) 
+       %base-packages))
 #+end_src
 
+* Bootloader
+#+begin_src scheme
+    (bootloader
+      (bootloader-configuration
+        (bootloader grub-bootloader)
+        (target "/dev/sda")
+        (keyboard-layout keyboard-layout))) ; for grub
+#+end_src
+* Swap
+#+begin_src scheme
+  (swap-devices (list "/dev/sda1"))
+#+end_src
+* Filesystem
+#+begin_src scheme
+  (file-systems
+    (cons* (file-system
+             (mount-point "/")
+             (device
+               (uuid "84d53b85-ed03-48b1-a0dc-f49e7d88d173"
+                     'ext4))
+             (type "ext4"))
+           %base-file-systems)))
+#+end_src
 * Operating system definition
 #+begin_src scheme
-  ; 
   (operating-system
     (host-name "wreck-it")
     (timezone "Europe/London")
@@ -164,13 +211,13 @@ dbus-start-session sway
                  (energy-perf-policy-on-bat "powersave")
                  (sched-powersave-on-ac? #t)
                  (sched-powersave-on-bat? #t)))
-       (service slim-service-type (slim-configuration
-                                   (display ":0")
-                                   (vt "vt7")
-                                   (xorg-configuration (xorg-configuration (keyboard-layout keyboard-layout))) ; https://issues.guix.info/37422
-                                   (auto-login? #t)
-                                   (default-user "user")
-                                   ))
+       ;(service slim-service-type (slim-configuration
+                                   ;(display ":0")
+                                   ;(vt "vt7")
+                                   ;(xorg-configuration (xorg-configuration (keyboard-layout keyboard-layout))) ; https://issues.guix.info/37422
+                                   ;(auto-login? #t)
+                                   ;(default-user "user")
+                                   ;))
        ;; (service slim-service-type (slim-configuration
        ;; 				 (display ":1")
        ;; 				 (vt "vt8")
@@ -218,29 +265,15 @@ dbus-start-session sway
     ;;             (xorg-configuration
     ;;              (keyboard-layout keyboard-layout))))
     ;;     %desktop-services))
-    (bootloader
-      (bootloader-configuration
-        (bootloader grub-bootloader)
-        (target "/dev/sda")
-        (keyboard-layout keyboard-layout))) ; for grub
-    (swap-devices (list "/dev/sda1"))
-    (file-systems
-      (cons* (file-system
-               (mount-point "/")
-               (device
-                 (uuid "84d53b85-ed03-48b1-a0dc-f49e7d88d173"
-                       'ext4))
-               (type "ext4"))
-             %base-file-systems)))
-
-  ;;; Create some folders
-  ; projects
-  ; sandbox
-  ; snippets
-  ; workspace
-
 
 #+end_src
+
+* Base folders
+;;; Create some folders
+; projects
+; sandbox
+; snippets
+; workspace
 
 * Guix packages
 #+begin_src shell
