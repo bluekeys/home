@@ -81,60 +81,60 @@ dbus-start-session sway
 
 * Packages
 #+begin_src scheme
-    (define my-packages
-      (append
-       (list
-        sway
-        swaybg
-        swayidle
-        swaylock
-        bemenu
-        vim
-        ranger
-        termite
-        luakit
-        youtube-dl
-        mpv
-        nss-certs
-        git
+  (define my-packages
+    (append
+     (list
+      sway
+      swaybg
+      swayidle
+      swaylock
+      bemenu
+      alacritty
+      ranger
+      termite
+      luakit
+      youtube-dl
+      mpv
+      nss-certs
+      git
 
-      ;;; Fonts
-        fontconfig
-        gs-fonts
-        font-dejavu
-        font-google-noto
-        font-gnu-freefont-ttf
-      ;;; Emacs
-                                            ;emacs-all-the-icons
-                                            ;emacs-use-package
-                                            ;emacs-doom-themes
-                                            ;emacs-doom-modeline
-                                            ;emacs-guix
-                                            ;emacs-next
-                                            ;emacs-vterm
-      ;;; Compilers and interpreters
-                                            ;guile-3.0
-      ;;; Window Manager
-        emacs
-        ;;emacs-exwm
-        ;;emacs-xelb
-        ;;arandr
-        ;;xrandr
-      ;;; Compositor
-                                            ;     picom
-      ;;; Internet
-        icecat
-        ;;ungoogled-chromium
-      ;;; Misc
-        ;;curl
-        ;;git
-        ;;keepassxc
-        ;;sicp ; https://guix.gnu.org/cookbook/en/guix-cookbook.html
-        ;;stow
-        ;;unzip
-      ;;; For https access
-        (specification->package "nss-certs")) 
-       %base-packages))
+    ;;; Fonts
+      fontconfig
+      gs-fonts
+      font-dejavu
+      font-google-noto
+      font-gnu-freefont-ttf
+    ;;; Emacs
+                                          ;emacs-all-the-icons
+                                          ;emacs-use-package
+                                          ;emacs-doom-themes
+                                          ;emacs-doom-modeline
+                                          ;emacs-guix
+                                          ;emacs-next
+                                          ;emacs-vterm
+    ;;; Compilers and interpreters
+                                          ;guile-3.0
+    ;;; Window Manager
+      emacs
+      ;;emacs-exwm
+      ;;emacs-xelb
+      ;;arandr
+      ;;xrandr
+    ;;; Compositor
+                                          ;     picom
+    ;;; Internet
+      icecat
+      ;;ungoogled-chromium
+    ;;; Misc
+      ;;curl
+      ;;git
+      ;;keepassxc
+      ;;sicp ; https://guix.gnu.org/cookbook/en/guix-cookbook.html
+      ;;stow
+      ;;unzip
+    ;;; For https access
+      (specification->package "nss-certs")) 
+     %base-packages))
 #+end_src
 
 * Bootloader

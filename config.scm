@@ -77,7 +77,7 @@
     swayidle
     swaylock
     bemenu
-    vim
+    alacritty
     ranger
     termite
     luakit
