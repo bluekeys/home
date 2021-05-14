@@ -240,7 +240,6 @@ A quick double space will show the "leader" menu.
 #+end_src
 
 *** For single key presses - general.el
-
 - [ ] Pressing enter on any kind of link, should follow the link, in another window
 
 This library plays well with evil and use-package
@@ -301,64 +300,42 @@ I should record the ideas, using org-capture. I should then refile those ideas i
 
 * Hydra definitions
 Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-package declaration.
+** Shortcuts
+This is a catch all column.
+
+#+begin_src emacs-lisp
+  (with-eval-after-load 'hydra
+    (with-eval-after-load 'major-mode-hydra
+      (message "Adding a shortcut column to my leader hydra")
+      (pretty-hydra-define+ my/hydra-leader ()
+        ("Shortcuts"
+         (("c" org-roam-capture "Capture")
+          ("h" (find-file "~/Projects/home/emacs.org") "emacs.org"))))))
+#+end_src
 ** Text scaling
 #+begin_src emacs-lisp :noweb-ref hydra-text-scale
   (with-eval-after-load 'hydra
-      (message "Defining text scale hydra")
-      (defhydra my/hydra-text-scale (:color cyan)
-        "scale text"
-        ("j" text-scale-increase "in")
-        ("k" text-scale-decrease "out")
-        ("SPC" hydra-pop "back"))
-
-      (with-eval-after-load 'major-mode-hydra
-        (pretty-hydra-define+ my/hydra-leader ()
-          ("Text"
-           (("s" (progn 
-                   (my/hydra-text-scale/body)
-                   (hydra-push '(my/hydra-leader/body))) 
-             "scale text"))))))
-#+end_src
-** Capture
-#+begin_src emacs-lisp
-  (with-eval-after-load 'hydra
-    (message "Defining misc hydra")
-    (defhydra my/hydra-capture (:color teal)
-      "Capture"
-      ("c" org-roam-capture "Capture"))
+    (message "Defining hydra - text scale")
+    (defhydra my/hydra-text-scale (:color cyan)
+      "scale text"
+      ("j" text-scale-increase "in")
+      ("k" text-scale-decrease "out")
+      ("SPC" hydra-pop "back"))
 
     (with-eval-after-load 'major-mode-hydra
+      (message "Attaching hydra to leader - text scale")
       (pretty-hydra-define+ my/hydra-leader ()
-        ("Capture"
-         (("c" (progn 
-                 (my/hydra-capture/body)
+        ("Shortcuts"
+         (("s" (progn 
+                 (my/hydra-text-scale/body)
                  (hydra-push '(my/hydra-leader/body))) 
-           "Misc"))))))
-
-#+end_src
-** Misc
-#+begin_src emacs-lisp
-  (with-eval-after-load 'hydra
-      (message "Defining misc hydra")
-      (defhydra my/hydra-misc (:color teal)
-        "Misc"
-        ("h" (find-file "~/Projects/home/emacs.org") "emacs.org")
-        ("c" org-roam-capture "Capture")
-)
-
-      (with-eval-after-load 'major-mode-hydra
-        (pretty-hydra-define+ my/hydra-leader ()
-          ("Misc"
-           (("v" (progn 
-                   (my/hydra-misc/body)
-                   (hydra-push '(my/hydra-leader/body))) 
-             "Misc"))))))
+           "scale text"))))))
 #+end_src
 ** Straight
 #+begin_src emacs-lisp :noweb-ref hydra-straight-helper
   (with-eval-after-load 'hydra
     (message "Defining straight helper hydra")
-      (defhydra hydra-straight-helper (:hint nil)
+    (defhydra hydra-straight-helper (:hint nil)
       "
       _c_heck all       |_f_etch all     |_m_erge all      |_n_ormalize all   |p_u_sh all
       _C_heck package   |_F_etch package |_M_erge package  |_N_ormlize package|p_U_sh package
@@ -387,18 +364,19 @@ Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-pac
       ("e" straight-prune-build)
       ("q" nil))
 
-      (with-eval-after-load 'major-mode-hydra
-	(pretty-hydra-define+ my/hydra-leader ()
-	  ("Text"
-	   (("S" (progn 
-		   (hydra-straight-helper/body)
-		   (hydra-push '(my/hydra-leader/body))) 
-	     "Straight"))))))
+    (with-eval-after-load 'major-mode-hydra
+      (message "Attaching hydra to leader - straight")
+      (pretty-hydra-define+ my/hydra-leader ()
+        ("Text"
+         (("S" (progn 
+                 (hydra-straight-helper/body)
+                 (hydra-push '(my/hydra-leader/body))) 
+           "Straight"))))))
 #+end_src
 ** Global org-mode
 #+begin_src emacs-lisp
   (with-eval-after-load 'hydra
-    (message "Defining global org mode hydra")
+    (message "Defining hydra - global org mode")
     (defhydra hydra-global-org (:color blue :hint nil)
       "
     Timer^^        ^Clock^         ^Capture^
@@ -421,24 +399,25 @@ Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-pac
       ("c" org-capture)
       ("l" org-capture-goto-last-stored))
 
-      (with-eval-after-load 'major-mode-hydra
-	(pretty-hydra-define+ my/hydra-leader ()
-	  ("Text"
-	   (("o" (progn 
-		   (hydra-global-org/body)
-		   (hydra-push '(my/hydra-leader/body))) 
-	     "Org"))))))
+    (with-eval-after-load 'major-mode-hydra
+      (message "Attaching hydra to leader - global org mode")
+      (pretty-hydra-define+ my/hydra-leader ()
+        ("Text"
+         (("o" (progn 
+                 (hydra-global-org/body)
+                 (hydra-push '(my/hydra-leader/body))) 
+           "Org"))))))
 #+end_src
-** Help
+** TODO Help
+This is an area that I have underexplored and look forward to unlocking more of the potential of in the future.
 #+begin_src emacs-lisp
   (with-eval-after-load 'all-the-icons
+    (message "Defining hydra - help")
     (defvar my/help--title (all-the-icons-faicon "medkit" "Help" 1 -0.05))
                                           ; C-;     iedit-mode-toggle-on-function
     (pretty-hydra-define+ my/help (:foreign-keys warn :title my/help--title :quit-key "SPC")
       ("Help"
        (("H" help-for-help "Help for help")
-        ("E" my/help-emacs/body "Learn more about Emacs")
-        ("g" my/help-gnu "Learn more about Gnu")
         ("a" apropos-command)
         ("d" apropos-documentation)
         ("e" view-echo-area-messages)
@@ -470,19 +449,18 @@ Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-pac
         ("." helpful-at-point "thing at point")
         ("d" display-local-help "Get help at point"))))
 
-      (pretty-hydra-define+ my/hydra-leader ()
-        ("Help"
-         (("h" (my/help/body)
-           "Help")))))
-    ;; RET     view-order-manuals
-    ;; C-s     search-forward-help-for-help
+    (message "Attaching hydra to leader - help")
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Help"
+       (("h" (my/help/body) "Help")))))
 #+end_src
-** Help for emacs
+*** Help for emacs
 #+begin_src emacs-lisp
   (with-eval-after-load 'all-the-icons
-    (defvar my/help-emacs--title (all-the-icons-fileicon "emacs" "Help - Emacs" 1 -0.05))
+    (message "Defining hydra - help - gnu emacs")
+    (defvar my/help-gnu--title (all-the-icons-fileicon "emacs" "Help - Gnu Emacs" 1 -0.05))
 
-    (pretty-hydra-define+ my/help-gnu (:foreign-keys warn :title my/help-gnu--title :quit-key "SPC")
+    (pretty-hydra-define+ my/help-gnu-emacs (:foreign-keys warn :title my/help-gnu-emacs--title :quit-key "SPC")
       ("Emacs"
        (("d" view-emacs-debugging "How to debug emacs")
         ("P" view-external-packages "Where to get packages")
@@ -497,9 +475,14 @@ Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-pac
         ("t" help-with-tutorial "Tutorial")
         ("n" view-emacs-news "News")
         ("p" view-emacs-problems "Info on known emacs problems")
-        ("t" view-emacs-todo "Todos")))))
+        ("t" view-emacs-todo "Todos"))))
+
+    (message "Attaching hydra to leader - GNU Emacs")
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Emacs"
+       (("E" (my/help-gnu-emacs/body) "Help")))))
 #+end_src
-** Help for gnu
+*** Help for gnu
 #+begin_src emacs-lisp
   (with-eval-after-load 'all-the-icons
     (defvar my/help-gnu--title (all-the-icons-fileicon "gnu" "Help - Gnu" 1 -0.05))
@@ -512,21 +495,42 @@ Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-pac
         ("l" describe-distribution "How to get the latest emacs")
         ("w" describe-no-warranty "Warranty")))))
 #+end_src
-** Get battery status
+** COMMENT Get battery status
+My battery status is always on screen. So, I am retiring this code.
 #+begin_src emacs-lisp
   (with-eval-after-load 'major-mode-hydra
     (pretty-hydra-define+ my/hydra-leader ()
       ("Battery"
-       (("b" (battery)
-	 "Show battery status")))))
+       (("b" (battery) "Show battery status")))))
 #+end_src
+
+** Buffers
+I want to be able to bury a buffer quickly.
+
+#+begin_src emacs-lisp
+  (with-eval-after-load 'major-mode-hydra
+
+    (message "Defining hydra - buffer")
+    (defhydra my/hydra-buffer (:color cyan)
+      "Do things with buffers."
+      ("b" bury-buffer "bury")
+      ("SPC" hydra-pop "back"))
+
+    (message "Attaching hydra to leader - shortcuts - buffer")
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Shortcuts"
+       (("b" (progn 
+               (my/hydra-text-scale/body)
+               (hydra-push '(my/hydra-leader/body)))
+         "Do things with buffers.")))))
+#+end_src
+
 ** emacs-guix
 #+begin_src emacs-lisp
   (with-eval-after-load 'major-mode-hydra
+    (message "Attaching hydra to leader - guix")
     (pretty-hydra-define+ my/hydra-leader ()
-      ("Guix"
-       (("g" (guix-popup)
-	 "Guix")))))
+      ("Guix" (("g" (guix-popup) "Guix")))))
 #+end_src
 ** Notes
 *** Quick Capture
