@@ -48,7 +48,7 @@
                     (group "users")
                     (home-directory "/home/user")
                     (supplementary-groups
-                      '("docker" "wheel" "netdev" "audio" "video" "lp")))
+                      '("docker" "wheel" "uucp" "netdev" "audio" "video" "lp")))
                   %base-user-accounts))
 
 (define my-packages
