@@ -251,10 +251,11 @@ This library plays well with evil and use-package
 
     (with-eval-after-load 'all-the-icons
       (defvar my/hydra-leader--title (s-concat
-                                      (all-the-icons-faicon "magic" "Leader" 0 0) " : Magic menu")))
+				      (all-the-icons-faicon "magic" "Leader" 0 0) " : Magic menu")))
 
     (pretty-hydra-define+ my/hydra-leader
-      (:title my/hydra-leader--title :color teal :quit-key "SPC"))
+      (:title my/hydra-leader--title :color teal :quit-key "SPC")
+      ("Shortcuts" ()))
 
     (general-define-key "s-SPC" 'my/hydra-leader/body)
     (mmap "SPC" 'my/hydra-leader/body)
@@ -624,35 +625,35 @@ These files are needed when running guix.
 These fonts suit me currently.
 #+begin_src emacs-lisp
     (when
-        (eq window-system 'x)
+	(eq window-system 'x)
 
-      (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
-      (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
-      (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 160 :weight 'regular)
+      ;; (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
+      ;; (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
+      ;; (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 160 :weight 'regular)
 
       (use-package unicode-fonts
-        :delight
-        :config
-        (unicode-fonts-setup)
-        ; (set-fontset-font "fontset-default" nil "DejaVu Sans Mono" nil 'append)
-        ; (set-face-attribute 'default nil :family "DejaVu")
-        ; (set-fontset-font "fontset-startup" nil "DejaVu Sans Mono" nil 'append)
-        ))
+	:delight
+	:config
+	(unicode-fonts-setup)
+	; (set-fontset-font "fontset-default" nil "DejaVu Sans Mono" nil 'append)
+	; (set-face-attribute 'default nil :family "DejaVu")
+	; (set-fontset-font "fontset-startup" nil "DejaVu Sans Mono" nil 'append)
+	))
 
     (when
-        (eq window-system 'w32)
+	(eq window-system 'w32)
 
-      (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
-      (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
-      (set-face-attribute 'variable-pitch nil :font "-outline-Noto Serif Thin-thin-normal-normal-serif-*-*-*-*-p-*-iso10646-1" :height 160)
+      ;; (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
+      ;; (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
+      ;; (set-face-attribute 'variable-pitch nil :font "-outline-Noto Serif Thin-thin-normal-normal-serif-*-*-*-*-p-*-iso10646-1" :height 160)
 
       (use-package unicode-fonts
-        :delight
-        :config
-        (unicode-fonts-setup)
-        ;(set-fontset-font "fontset-default" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
-        ;(set-face-attribute 'default nil :family "Consolas")
-        ;(set-fontset-font "fontset-startup" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
+	:delight
+	:config
+	(unicode-fonts-setup)
+	;(set-fontset-font "fontset-default" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
+	;(set-face-attribute 'default nil :family "Consolas")
+	;(set-fontset-font "fontset-startup" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
   ))
 #+end_src
 ** Theme
@@ -679,6 +680,50 @@ These fonts suit me currently.
 #+begin_src emacs-lisp
   (use-package smart-mode-line-powerline-theme)
 #+end_src
+*** A theme switching hydra
+#+begin_src emacs-lisp
+  ; https://www.brautaset.org/articles/2017/hydra-theme-switcher.html
+
+  (defun sb/disable-all-themes ()
+    (interactive)
+    (mapc #'disable-theme custom-enabled-themes))
+
+  (defun sb/load-theme (theme)
+    "Enhance `load-theme' by first disabling enabled themes."
+    (sb/disable-all-themes)
+    (load-theme theme t))
+
+  (setq sb/hydra-selectors
+        "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+  (defun sb/sort-themes (themes)
+    (sort themes
+          (lambda (a b)
+            (string<
+             (symbol-name a)
+             (symbol-name b)))))
+
+  (defun sb/hydra-load-theme-heads (themes)
+    (mapcar* (lambda (a b)
+               (list (char-to-string a)
+                     `(sb/load-theme ',b)
+                     (symbol-name b)))
+             sb/hydra-selectors themes))
+
+  (bind-keys ("C-c w t" .
+              (lambda ()
+                (interactive)
+                (call-interactively
+                 (eval `(defhydra sb/hydra-select-themes
+                          (:hint nil :color pink)
+                          "Select Theme"
+                          ,@(sb/hydra-load-theme-heads
+                             (sb/sort-themes
+                              (custom-available-themes)))
+                          ("DEL" (sb/disable-all-themes))
+                          ("RET" nil "done" :color blue)))))))
+#+end_src
+
 ** Modeline
 *** smart modeline
 #+begin_src emacs-lisp
