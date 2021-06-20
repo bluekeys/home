@@ -604,324 +604,6 @@ Paredit with evil awareness for more than just lisp
 #+begin_src emacs-lisp
   (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 #+end_src
-* UI modifications
-One thing I need to consider is whether changing themes in the middle of a session impacts the rest of my UI choices
-** Line highlight
-#+begin_src emacs-lisp 
-  (global-hl-line-mode 1)
-  (set-face-attribute 'hl-line nil 
-                      :box t
-                      :inverse-video nil
-                      :weight 'ultra-bold)
-#+end_src
-** Font
-These files are needed when running guix.
-#+begin_src shell
-  guix install font-abattis-cantarell
-  fc-list
-  fc-cache -f -v
-#+end_src
-
-These fonts suit me currently.
-#+begin_src emacs-lisp
-    (when
-	(eq window-system 'x)
-
-      ;; (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
-      ;; (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
-      ;; (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 160 :weight 'regular)
-
-      (use-package unicode-fonts
-	:delight
-	:config
-	(unicode-fonts-setup)
-	; (set-fontset-font "fontset-default" nil "DejaVu Sans Mono" nil 'append)
-	; (set-face-attribute 'default nil :family "DejaVu")
-	; (set-fontset-font "fontset-startup" nil "DejaVu Sans Mono" nil 'append)
-	))
-
-    (when
-	(eq window-system 'w32)
-
-      ;; (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
-      ;; (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
-      ;; (set-face-attribute 'variable-pitch nil :font "-outline-Noto Serif Thin-thin-normal-normal-serif-*-*-*-*-p-*-iso10646-1" :height 160)
-
-      (use-package unicode-fonts
-	:delight
-	:config
-	(unicode-fonts-setup)
-	;(set-fontset-font "fontset-default" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
-	;(set-face-attribute 'default nil :family "Consolas")
-	;(set-fontset-font "fontset-startup" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
-  ))
-#+end_src
-** Theme
-#+begin_src emacs-lisp
-  (use-package doom-themes
-    :delight
-    :config
-    ; (load-theme 'doom-snazzy t
-    ; (load-theme 'doom-manegarm t
-    ; (load-theme 'whiteboard t)
-    (load-theme 'doom-sourcerer t))
-#+end_src
-
-*** Some additional themes for smart-modeline to use later
-**** smart modeline atom one dark theme
-#+begin_src emacs-lisp
-  (use-package smart-mode-line-atom-one-dark-theme)
-#+end_src
-**** solarized-theme
-#+begin_src emacs-lisp
-  (use-package solarized-theme)
-#+end_src
-**** smart modeline powerline theme
-#+begin_src emacs-lisp
-  (use-package smart-mode-line-powerline-theme)
-#+end_src
-*** A theme switching hydra
-#+begin_src emacs-lisp
-  ; https://www.brautaset.org/articles/2017/hydra-theme-switcher.html
-
-  (defun sb/disable-all-themes ()
-    (interactive)
-    (mapc #'disable-theme custom-enabled-themes))
-
-  (defun sb/load-theme (theme)
-    "Enhance `load-theme' by first disabling enabled themes."
-    (sb/disable-all-themes)
-    (load-theme theme t))
-
-  (setq sb/hydra-selectors
-        "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-  (defun sb/sort-themes (themes)
-    (sort themes
-          (lambda (a b)
-            (string<
-             (symbol-name a)
-             (symbol-name b)))))
-
-  (defun sb/hydra-load-theme-heads (themes)
-    (mapcar* (lambda (a b)
-               (list (char-to-string a)
-                     `(sb/load-theme ',b)
-                     (symbol-name b)))
-             sb/hydra-selectors themes))
-
-  (bind-keys ("C-c w t" .
-              (lambda ()
-                (interactive)
-                (call-interactively
-                 (eval `(defhydra sb/hydra-select-themes
-                          (:hint nil :color pink)
-                          "Select Theme"
-                          ,@(sb/hydra-load-theme-heads
-                             (sb/sort-themes
-                              (custom-available-themes)))
-                          ("DEL" (sb/disable-all-themes))
-                          ("RET" nil "done" :color blue)))))))
-#+end_src
-
-** Modeline
-*** smart modeline
-#+begin_src emacs-lisp
-  (use-package smart-mode-line
-    :config
-    (setq sml/no-confirm-load-theme t)
-    (setq sml/theme 'respectful)
-    (sml/setup))
-#+end_src
-*** mini modeline
-https://github.com/kiennq/emacs-mini-modeline
-#+begin_src emacs-lisp
-  (use-package mini-modeline
-    :after smart-mode-line
-    :custom
-    (mini-modeline-echo-duration 5)
-    (mini-modeline-right-padding 1)
-    :config
-    (defvaralias 'mini-modeline-frame 'exwm-workspace--current)
-    (setq mini-modeline-r-format
-          '("%e" ; (:eval (number-to-string (winum-get-number)))
-                 ; " "
-                 ; evil-mode-line-tag
-                 ; " "
-                 ; mode-line-modified
-                 ; mode-line-buffer-identification
-                 ; " "
-                 ; mode-line-position
-                 (:eval (nyan-create))
-                 (:eval
-                  (if (featurep 'perspective)
-                      (persp-current-name)
-                    "neverland"))
-                 ;(:eval (symbol-name major-mode))
-                 ; "   "
-                 ; (:eval (magit-get-current-branch))
-                 ; "   "
-                 ; (:eval (format-time-string "%l:%M%P"))
-                 )
-          mini-modeline-l-format nil)
-    (mini-modeline-mode t))
-#+end_src
-*** COMMENT Doom
-I like doom modeline https://seagle0128.github.io/doom-modeline/
-#+begin_src emacs-lisp 
-  (use-package doom-modeline
-    :delight
-    :init
-    (defun my/setup-custom-doom-modeline ()
-      (message "MyDOOM")
-      (doom-modeline-def-modeline 'my-simple-line
-        '(bar)
-        '(bar))
-      (doom-modeline-set-modeline 'my-simple-line 1))
-    (add-hook 'doom-modeline-mode-hook 'my/setup-custom-doom-modeline)
-    (doom-modeline-mode 1)
-    :custom
-    (doom-modeline-height 30)
-    (doom-modeline-bar-width 5)
-    :config
-  )
-#+end_src
-** Minibuffer
-*** DONE eldoc-mode shows documentation in the minibuffer when writing code
-http://www.emacswiki.org/emacs/ElDoc
-#+begin_src emacs-lisp
-  (add-hook 'emacs-lisp-mode-hook 'turn-on-eldoc-mode)
-  (add-hook 'lisp-interaction-mode-hook 'turn-on-eldoc-mode)
-  (add-hook 'ielm-mode-hook 'turn-on-eldoc-mode)
-#+end_src
-** Nyan-mode
-Just a little bit of fun, but way cooler than a scrollbar :)
-#+begin_src emacs-lisp
-    (use-package nyan-mode
-      :delight
-      :custom (nyan-wavy-trail 't)
-      :config 
-      (nyan-mode)
-      (nyan-start-animation))
-#+end_src
-** Free as much screen real-estate as possible
-It's fine, the tooltip can stay, it'll display in the echo area.
-#+begin_src emacs-lisp
-  (tooltip-mode t)
-#+end_src
-I don't need scrollbars, I have nyan mode
-#+begin_src emacs-lisp
-  (scroll-bar-mode -1)
-#+end_src
-Bye bye pretty button bar, I prefer M-`
-#+begin_src emacs-lisp
-  (tool-bar-mode -1)
-#+end_src
-As above
-#+begin_src emacs-lisp
-  (menu-bar-mode 0) ; so long file -> menu
-#+end_src
-** Bell
-I'm not a big fan of noise, but I do like the visible bell
-#+begin_src emacs-lisp
-  (setq visible-bell t)
-  (setq ring-bell-function nil) ; I wonder what other people are doing with this setting?
-#+end_src
-** Cursor blinking
-I find a blinking cursor can be distracting
-#+begin_src emacs-lisp 
-  (blink-cursor-mode 0)
-#+end_src
-** Dialog boxes
-I don't think dialog boxes are my style.
-#+begin_src emacs-lisp
-  (setq use-dialog-box nil)
-#+end_src
-** Frame transparency
-#+begin_src emacs-lisp
-  (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
-  (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
-  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
-  (add-to-list 'default-frame-alist '(fullscreen . maximized))
-#+end_src
-** Icons
-#+begin_src emacs-lisp
-  (use-package all-the-icons
-    :delight)
-#+end_src
-** Line numbers
-I prefer line numbers in most modes for pair programming etc.
-#+begin_src emacs-lisp
-  (global-display-line-numbers-mode t)
-  (dolist (mode '(org-mode-hook
-                  term-mode-hook
-                  erc-mode-hook
-                  help-mode-hook
-                  speedbar-mode-hook
-                  special-mode-hook
-                  Info-mode-hook
-                  vterm-mode-hook
-                  eshell-mode-hook))
-    (add-hook mode (lambda () (display-line-numbers-mode 0))))
-#+end_src
-
-#+begin_src emacs-lisp
-  (defun my/hide-line-numbers (orig-fun &rest args)
-    "Hide line numbers function used to be wrapped around sidebar tree buffer view."
-    (display-line-numbers-mode 0)
-    (apply orig-fun args))
-
-  (defun my/show-line-numbers (orig-fun &rest args)
-    "Show line numbers function used to be wrapped around sidebar tree buffer view."
-    (display-line-numbers-mode 1)
-    (apply orig-fun args))
-
-  (advice-add
-   'org-sidebar-tree-view-buffer
-   :around
-   #'my/hide-line-numbers)
-#+end_src
-** Parenthesis colour matching
-#+begin_src emacs-lisp 
-  (use-package rainbow-delimiters
-    :delight
-    :hook (prog-mode . rainbow-delimiters-mode))
-#+end_src
-** Highlight s-exp
-https://github.com/daimrod/highlight-sexp
-#+begin_src emacs-lisp 
-  ;(use-package highlight-sexp
-  ;  :delight
-  ;  :hook (prog-mode . highlight-sexp-mode)
-  ;  :custom ((hl-sexp-face hl-line)))
-#+end_src
-** Scrolling
-One line at a time.
-#+begin_src emacs-lisp
-  (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
-#+end_src
-Don't accelerate scrolling
-#+begin_src emacs-lisp
-  (setq mouse-wheel-progressive-speed nil)
-#+end_src
-Scroll window under mouse
-#+begin_src emacs-lisp
-  (setq mouse-wheel-follow-mouse 't)
-#+end_src
-Keyboard scroll one line at a time
-#+begin_src emacs-lisp
-  (setq scroll-step 1)
-#+end_src
-** yes/no => y/n
-Kiss, right?
-#+begin_src emacs-lisp
-  (fset 'yes-or-no-p 'y-or-n-p)
-#+end_src
-** COMMENT Posframe
-Postframe can popup a frame at point.
-#+begin_src emacs-lisp
-  (use-package posframe)
-#+end_src
 * A dashboard
 https://github.com/emacs-dashboard/emacs-dashboard 
 
@@ -1891,6 +1573,284 @@ https://emacsconf.org/2020/talks/34/
 * COMMENT ctable
 #+begin_src emacs-lisp
   (use-package ctable)
+#+end_src
+* UI modifications
+One thing I need to consider is whether changing themes in the middle of a session impacts the rest of my UI choices
+** Line highlight
+#+begin_src emacs-lisp 
+  (global-hl-line-mode 1)
+  (set-face-attribute 'hl-line nil 
+                      :box t
+                      :inverse-video nil
+                      :weight 'ultra-bold)
+#+end_src
+** Font
+These files are needed when running guix.
+#+begin_src shell
+  guix install font-abattis-cantarell
+  fc-list
+  fc-cache -f -v
+#+end_src
+
+These fonts suit me currently.
+#+begin_src emacs-lisp
+    (when
+	(eq window-system 'x)
+
+      ;; (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
+      ;; (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
+      ;; (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 160 :weight 'regular)
+
+      (use-package unicode-fonts
+	:delight
+	:config
+	(unicode-fonts-setup)
+	; (set-fontset-font "fontset-default" nil "DejaVu Sans Mono" nil 'append)
+	; (set-face-attribute 'default nil :family "DejaVu")
+	; (set-fontset-font "fontset-startup" nil "DejaVu Sans Mono" nil 'append)
+	))
+
+    (when
+	(eq window-system 'w32)
+
+      ;; (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
+      ;; (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
+      ;; (set-face-attribute 'variable-pitch nil :font "-outline-Noto Serif Thin-thin-normal-normal-serif-*-*-*-*-p-*-iso10646-1" :height 160)
+
+      (use-package unicode-fonts
+	:delight
+	:config
+	(unicode-fonts-setup)
+	;(set-fontset-font "fontset-default" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
+	;(set-face-attribute 'default nil :family "Consolas")
+	;(set-fontset-font "fontset-startup" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
+  ))
+#+end_src
+** Theme
+*** Theme loading functions
+https://www.brautaset.org/articles/2017/hydra-theme-switcher.html
+**** Disable all themes
+#+begin_src emacs-lisp
+  (defun sb/disable-all-themes ()
+    (interactive)
+    (mapc #'disable-theme custom-enabled-themes))
+#+end_src
+**** Load theme
+#+begin_src emacs-lisp
+  (defun sb/load-theme (theme)
+    "Enhance `load-theme' by first disabling enabled themes."
+    (sb/disable-all-themes)
+    (load-theme theme t)
+    (sml/apply-theme 'light-powerline))
+#+end_src
+**** A theme switching hydra
+#+begin_src emacs-lisp
+  (setq sb/hydra-selectors
+        "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+  (defun sb/sort-themes (themes)
+    (sort themes
+          (lambda (a b)
+            (string<
+             (symbol-name a)
+             (symbol-name b)))))
+
+  (defun sb/hydra-load-theme-heads (themes)
+    (mapcar* (lambda (a b)
+               (list (char-to-string a)
+                     `(sb/load-theme ',b)
+                     (symbol-name b)))
+             sb/hydra-selectors themes))
+
+  (defun populate-theme-hydra ()
+    (interactive)
+    (eval `(defhydra sb/hydra-select-themes
+             (:hint nil :color pink)
+             "Select Theme"
+             ,@(sb/hydra-load-theme-heads
+                (sb/sort-themes
+                 (custom-available-themes)))
+             ("DEL" (sb/disable-all-themes))
+             ("RET" nil "done" :color blue))))
+
+  (with-eval-after-load 'major-mode-hydra
+      (message "Attaching hydra to leader - theme change")
+      (pretty-hydra-define+ my/hydra-leader ()
+        ("Shortcuts"
+         (("t" (progn 
+                 (populate-theme-hydra)
+                 (sb/hydra-select-themes/body)
+                 (hydra-push '(my/hydra-leader/body))) 
+           "scale text")))))
+#+end_src
+
+*** Smart mode line powerline theme
+#+begin_src emacs-lisp
+  (use-package smart-mode-line-powerline-theme)
+#+end_src
+
+*** Apply a theme
+#+begin_src emacs-lisp
+  (use-package doom-themes
+    :after smart-mode-line
+    :delight
+    :config
+                                          ;(load-theme 'doom-snazzy t
+                                          ;(load-theme 'doom-manegarm t
+                                          ;(load-theme 'whiteboard t)
+                                          ;(load-theme 'doom-sourcerer t)
+    (sb/load-theme 'doom-one-light))
+#+end_src
+** Modeline
+*** smart modeline
+#+begin_src emacs-lisp
+  (use-package smart-mode-line
+    :after smart-mode-line-powerline-theme
+
+    :init
+    (setq sml/no-confirm-load-theme t)
+    (setq sml/vc-mode-show-backend t)
+
+    :config
+    (sml/setup)
+    ;(sml/apply-theme 'light-powerline)
+    )
+#+end_src
+** Minibuffer
+*** DONE eldoc-mode shows documentation in the minibuffer when writing code
+http://www.emacswiki.org/emacs/ElDoc
+#+begin_src emacs-lisp
+  (add-hook 'emacs-lisp-mode-hook 'turn-on-eldoc-mode)
+  (add-hook 'lisp-interaction-mode-hook 'turn-on-eldoc-mode)
+  (add-hook 'ielm-mode-hook 'turn-on-eldoc-mode)
+#+end_src
+** Nyan-mode
+Just a little bit of fun, but way cooler than a scrollbar :)
+#+begin_src emacs-lisp
+    (use-package nyan-mode
+      :delight
+      :custom (nyan-wavy-trail 't)
+      :config 
+      (nyan-mode)
+      (nyan-start-animation))
+#+end_src
+** Free as much screen real-estate as possible
+It's fine, the tooltip can stay, it'll display in the echo area.
+#+begin_src emacs-lisp
+  (tooltip-mode t)
+#+end_src
+I don't need scrollbars, I have nyan mode
+#+begin_src emacs-lisp
+  (scroll-bar-mode -1)
+#+end_src
+Bye bye pretty button bar, I prefer M-`
+#+begin_src emacs-lisp
+  (tool-bar-mode -1)
+#+end_src
+As above
+#+begin_src emacs-lisp
+  (menu-bar-mode 0) ; so long file -> menu
+#+end_src
+** Bell
+I'm not a big fan of noise, but I do like the visible bell
+#+begin_src emacs-lisp
+  (setq visible-bell t)
+  (setq ring-bell-function nil) ; I wonder what other people are doing with this setting?
+#+end_src
+** Cursor blinking
+I find a blinking cursor can be distracting
+#+begin_src emacs-lisp 
+  (blink-cursor-mode 0)
+#+end_src
+** Dialog boxes
+I don't think dialog boxes are my style.
+#+begin_src emacs-lisp
+  (setq use-dialog-box nil)
+#+end_src
+** Frame transparency
+#+begin_src emacs-lisp
+  (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
+  (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
+  (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
+  (add-to-list 'default-frame-alist '(fullscreen . maximized))
+#+end_src
+** Icons
+#+begin_src emacs-lisp
+  (use-package all-the-icons
+    :delight)
+#+end_src
+** Line numbers
+I prefer line numbers in most modes for pair programming etc.
+#+begin_src emacs-lisp
+  (global-display-line-numbers-mode t)
+  (dolist (mode '(org-mode-hook
+                  term-mode-hook
+                  erc-mode-hook
+                  help-mode-hook
+                  speedbar-mode-hook
+                  special-mode-hook
+                  Info-mode-hook
+                  vterm-mode-hook
+                  eshell-mode-hook))
+    (add-hook mode (lambda () (display-line-numbers-mode 0))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun my/hide-line-numbers (orig-fun &rest args)
+    "Hide line numbers function used to be wrapped around sidebar tree buffer view."
+    (display-line-numbers-mode 0)
+    (apply orig-fun args))
+
+  (defun my/show-line-numbers (orig-fun &rest args)
+    "Show line numbers function used to be wrapped around sidebar tree buffer view."
+    (display-line-numbers-mode 1)
+    (apply orig-fun args))
+
+  (advice-add
+   'org-sidebar-tree-view-buffer
+   :around
+   #'my/hide-line-numbers)
+#+end_src
+** Parenthesis colour matching
+#+begin_src emacs-lisp 
+  (use-package rainbow-delimiters
+    :delight
+    :hook (prog-mode . rainbow-delimiters-mode))
+#+end_src
+** Highlight s-exp
+https://github.com/daimrod/highlight-sexp
+#+begin_src emacs-lisp 
+  ;(use-package highlight-sexp
+  ;  :delight
+  ;  :hook (prog-mode . highlight-sexp-mode)
+  ;  :custom ((hl-sexp-face hl-line)))
+#+end_src
+** Scrolling
+One line at a time.
+#+begin_src emacs-lisp
+  (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
+#+end_src
+Don't accelerate scrolling
+#+begin_src emacs-lisp
+  (setq mouse-wheel-progressive-speed nil)
+#+end_src
+Scroll window under mouse
+#+begin_src emacs-lisp
+  (setq mouse-wheel-follow-mouse 't)
+#+end_src
+Keyboard scroll one line at a time
+#+begin_src emacs-lisp
+  (setq scroll-step 1)
+#+end_src
+** yes/no => y/n
+Kiss, right?
+#+begin_src emacs-lisp
+  (fset 'yes-or-no-p 'y-or-n-p)
+#+end_src
+** COMMENT Posframe
+Postframe can popup a frame at point.
+#+begin_src emacs-lisp
+  (use-package posframe)
 #+end_src
 * Lots and lots of ideas were taken from elsewhere.
 - https://github.com/raxod502/radian
