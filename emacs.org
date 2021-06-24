@@ -9,6 +9,7 @@
 | TODO | A |       |          | [[These are the files that are used to build the agenda][These are the files that are used to build the agenda]] |
 | TODO | A |       |          | [[org-roam][org-roam]]                                              |
 | TODO | A |       |          | [[Drill][Drill]]                                                 |
+|      |   |       |          |                                                       |
 #+END:
 
 * Bootstrap / housekeeping
@@ -23,6 +24,8 @@ I hope this section will lead to reduced repetition.
 #+end_src
 *** Fonts
 #+begin_src emacs-lisp
+;(set-frame-font "Fantasque Sans Mono-14" nil t)
+;(set-frame-font "Source Code Pro-14" nil t)
   (defvar my/fixed-pitch-font "Noto Mono")
   (defvar my/fixed-pitch-height 110)
   (defvar my/variable-pitch "Cantarell")
