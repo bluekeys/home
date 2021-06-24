@@ -311,7 +311,7 @@ This is a catch all column.
       (pretty-hydra-define+ my/hydra-leader ()
         ("Shortcuts"
          (("c" org-roam-capture "Capture")
-          ("h" (find-file "~/Projects/home/emacs.org") "emacs.org"))))))
+          ("H" (find-file "~/Projects/home/emacs.org") "emacs.org"))))))
 #+end_src
 ** Text scaling
 #+begin_src emacs-lisp :noweb-ref hydra-text-scale
