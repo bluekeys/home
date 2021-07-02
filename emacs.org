@@ -320,11 +320,12 @@ This is a catch all column.
 #+begin_src emacs-lisp :noweb-ref hydra-text-scale
   (with-eval-after-load 'hydra
     (message "Defining hydra - text scale")
-    (defhydra my/hydra-text-scale (:color cyan)
+    (defhydra my/hydra-text-scale (:color cyan :quit-key "SPC")
       "scale text"
       ("j" text-scale-increase "in")
       ("k" text-scale-decrease "out")
-      ("SPC" hydra-pop "back"))
+      ;("SPC" hydra-pop "back"))
+
 
     (with-eval-after-load 'major-mode-hydra
       (message "Attaching hydra to leader - text scale")
@@ -383,11 +384,11 @@ This is a catch all column.
     (message "Defining hydra - global org mode")
     (defhydra hydra-global-org (:color blue :hint nil)
       "
-    Timer^^        ^Clock^         ^Capture^
-    --------------------------------------------------
-    s_t_art        _w_ clock in    _c_apture
-     _s_top        _o_ clock out   _l_ast capture
-    _r_eset        _j_ clock goto
+    Timer^^        ^Clock^         ^Capture^       ^Document^
+    ----------------------------------------------------------
+    s_t_art        _W_ clock in    _c_apture       _o_ overview
+     _s_top        _O_ clock out   _l_ast capture
+    _r_eset        _J_ clock goto
     _p_rint
     "
       ("t" org-timer-start)
@@ -396,12 +397,13 @@ This is a catch all column.
       ("r" org-timer-set-timer)
       ;; Print timer value to buffer
       ("p" org-timer)
-      ("w" (org-clock-in '(4)))
-      ("o" org-clock-out)
+      ("W" (org-clock-in '(4)))
+      ("O" org-clock-out)
       ;; Visit the clocked task from any buffer
-      ("j" org-clock-goto)
+      ("J" org-clock-goto)
       ("c" org-capture)
-      ("l" org-capture-goto-last-stored))
+      ("l" org-capture-goto-last-stored)
+      ("o" org-overview))
 
     (with-eval-after-load 'major-mode-hydra
       (message "Attaching hydra to leader - global org mode")
