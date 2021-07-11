@@ -66,7 +66,7 @@ Set up unicode all the time.
   (setq x-select-request-type '(UTF8_STRING COMPOUND_TEXT TEXT STRING))
 #+end_src
 
-** A functional package manager - straight
+** straight.el - A functional package manager
 https://github.com/raxod502/straight.el
 You must install git to use straight.el
 You must remove any code that relates to package.el, therefore you must remove any use-package :ensure / use-package-always-ensure
@@ -188,7 +188,7 @@ Recentf is a minor mode that builds a list of recently opened files. This list i
   (run-at-time nil (* 5 60) 'recentf-save-list)
 #+end_src
 
-** Various different ways of binding functions to keys
+** Various different ways of binding functions to keys (hydra, hercules, key chords, general)
 Use M-x describe-personal-keybindings to see keybindings set by init.el
 
 *** For things that are just so great, you want to keep doing them - hydra
@@ -255,6 +255,11 @@ As I use use-package, I can use the :mode-hydra keyword to create major mode hyd
     )
 #+end_src
 
+*** Hercules - Never need to write another hydra again!
+https://gitlab.com/jjzmajic/hercules.el
+#+begin_src emacs-lisp
+  (use-package hercules)
+#+end_src
 *** To make use of combinations of keys - key chords
 A quick double space will show the "leader" menu.
 #+begin_src emacs-lisp
@@ -306,24 +311,6 @@ This library plays well with evil and use-package
     ;;   )
     )
 #+end_src
-* Workflow
-#+begin_src plantuml :file workflow.png
-
-#+end_src
-
-I would like to see that work is driven by org mode.
-Actionable items will be grouped by projects.
-Each project will have a top-level README.md which will contain project planning and other documentation, written in a "literate" style.
-When working on a TODO item in a project, a perspective should be created. Org's clock should be started. Switching perspectives should pause the clock on the current TODO and start the clock on the new item.
-
-The use of perspectives in this way should help roll-up all the tasks created by a "yak shaving" expedition, particularly when perspectives are sorted by created.
-
-The README document in each project should contain a backlog heading.
-
-E.g. I have an idea, I want to ensure that posframes are used for all hydras. I want to ensure that all text is visible in all hydras, which in the case of C-h, doesn't appear to be true. I also want to ensure that the C-spc / spc hydra is a posframe.
-
-I should record the ideas, using org-capture. I should then refile those ideas into the relevant areas of the config.
-
 * Hydra definitions
 Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-package declaration.
 ** Shortcuts
@@ -1463,6 +1450,15 @@ https://github.com/skeeto/emacsql
    (setq display-buffer-reuse-frames t)         ; reuse windows in other frames
    (setq even-window-sizes nil)                 ; display-buffer: avoid resizing
  #+end_src
+** org-babel
+#+begin_src emacs-lisp
+  (hercules-def
+   :toggle-funs #'org-babel-mode
+   :keymap 'org-babel-map
+   :transient t)
+
+  (define-key org-mode-map (kbd "C-c C-v") #'org-babel-mode)
+#+end_src
 * Git / version management / magit
 https://lists.gnu.org/archive/html/emacs-devel/2016-01/msg01802.html
 #+begin_src emacs-lisp 
