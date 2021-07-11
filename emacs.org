@@ -12,6 +12,28 @@
 |      |   |       |          |                                                       |
 #+END:
 
+* A explanation of how it all works
+#+begin_src plantuml :file workflow.png
+
+#+end_src
+
+I would like to see that work is driven by org mode.
+Actionable items will be grouped by projects.
+Each project will have a top-level README.md which will contain project planning and other documentation, written in a "literate" style.
+When working on a TODO item in a project, a perspective should be created. Org's clock should be started. Switching perspectives should pause the clock on the current TODO and start the clock on the new item.
+
+The use of perspectives in this way should help roll-up all the tasks created by a "yak shaving" expedition, particularly when perspectives are sorted by created.
+
+The README document in each project should contain a backlog heading.
+
+E.g. I have an idea, I want to ensure that posframes are used for all hydras. I want to ensure that all text is visible in all hydras, which in the case of C-h, doesn't appear to be true. I also want to ensure that the C-spc / spc hydra is a posframe.
+
+I should record the ideas, using org-capture. I should then refile those ideas into the relevant areas of the config.
+
+* Early init
+#+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
+  (setq package-enable-at-startup nil) ;; Recommended by straight.el to prevent package.el loading packages prior to their init-file loading
+#+end_src
 * Bootstrap / housekeeping
 ** Try to define variables here where possible
 I hope this section will lead to reduced repetition.
