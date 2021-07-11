@@ -608,7 +608,7 @@ For more information about this package, see https://elpa.gnu.org/packages/undo-
     :delight
     :after (evil))
 #+end_src
-** evil-cleverparens 
+** evil-cleverparens
 Paredit with evil awareness for more than just lisp
 #+begin_src emacs-lisp
   (use-package evil-cleverparens
@@ -617,6 +617,16 @@ Paredit with evil awareness for more than just lisp
 ** Get ESC to behave consistently
 #+begin_src emacs-lisp
   (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+#+end_src
+** Evil org mode
+Error (use-package): evil-org/:config: Cannot open load file: No such file or directory, evil-org-agenda
+#+begin_src emacs-lisp
+  ;; (use-package evil-org
+  ;;   :after org
+  ;;   :hook (org-mode . (lambda () evil-org-mode))
+  ;;   :config
+  ;;   (require 'evil-org-agenda)
+  ;;   (evil-org-agenda-set-keys))
 #+end_src
 * A dashboard
 https://github.com/emacs-dashboard/emacs-dashboard 
@@ -1408,6 +1418,15 @@ https://github.com/skeeto/emacsql
     :delight
     :straight (:built-in t))
 #+end_src
+** leetcode
+#+begin_src emacs-lisp
+  (use-package leetcode
+    :config
+      (setq leetcode-prefer-language "python3")
+      (setq leetcode-prefer-sql "mysql")
+      (setq leetcode-save-solutions t)
+      (setq leetcode-directory "~/leetcode"))
+#+end_src
 * Minor mode configuration
 ** Perspective.el
  The most important thing when working on multiple things is to maintain perspective!
@@ -1805,12 +1824,15 @@ I don't think dialog boxes are my style.
 ** Line numbers
 I prefer line numbers in most modes for pair programming etc.
 #+begin_src emacs-lisp
-  (global-display-line-numbers-mode t)
+  (global-display-line-numbers-mode 0)
   (dolist (mode '(org-mode-hook
                   term-mode-hook
                   erc-mode-hook
                   help-mode-hook
                   speedbar-mode-hook
+                  leetcode--loading-mode-hook
+                  leetcode--problem-description-mode-hook
+                  leetcode--problems-mode-hook
                   special-mode-hook
                   Info-mode-hook
                   vterm-mode-hook
