@@ -333,8 +333,8 @@ This is a catch all column.
       "scale text"
       ("j" text-scale-increase "in")
       ("k" text-scale-decrease "out")
-      ;("SPC" hydra-pop "back"))
-
+                                          ;("SPC" hydra-pop "back"))
+      )
 
     (with-eval-after-load 'major-mode-hydra
       (message "Attaching hydra to leader - text scale")
@@ -501,7 +501,7 @@ This is an area that I have underexplored and look forward to unlocking more of 
 #+begin_src emacs-lisp
   (with-eval-after-load 'all-the-icons
     (defvar my/help-gnu--title (all-the-icons-fileicon "gnu" "Help - Gnu" 1 -0.05))
-  
+
     (pretty-hydra-define+ my/help-gnu (:foreign-keys warn :title my/help-gnu--title :quit-key "SPC")
       ("Gnu Project"
        (("e" about-emacs "About emacs")
