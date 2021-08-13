@@ -315,8 +315,7 @@ As I use use-package, I can use the :mode-hydra keyword to create major mode hyd
                      " "
                      (symbol-name mode)
                      " commands")))
-    :bind
-    ("M-SPC" . major-mode-hydra))
+    :init (general-def :states '(normal motion) my/major-mode-key 'major-mode-hydra))
 #+end_src
 
 *** Some hydra definitions
