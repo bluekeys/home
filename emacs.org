@@ -47,6 +47,8 @@ To aid debugging, each top level headline is configured to tangle into a distinc
 * Initialise!
 #+begin_src emacs-lisp
   (defvar my/org-roam-directory "~/roam/")
+  (defvar my/major-mode-key "'")
+  (defvar my/leader-key "#")
 #+end_src
 
 ** Stop custom
@@ -263,31 +265,16 @@ This library plays well with evil and use-package
     :config 
     (general-evil-setup t)
 
-    (defconst my-leader-key "S-SPC")
-
-    (general-create-definer my-leader-def :prefix my-leader-key)
-
-    ;; (my-leader-def
-    ;;   :states 'normal
-    ;;   :keymaps 'override
-    ;;   "a" `org-agenda)
+    (general-create-definer my-leader-def :prefix my/leader-key)
+    ; This feels more comfortable to me than the emacs defaults
+    (mmap "M-j" 'scroll-other-window)
+    (mmap "M-k" 'scroll-other-window-down)
 
     (with-eval-after-load 'hydra
       (with-eval-after-load 'all-the-icons
-	  (defvar my/hydra-leader--title (s-concat
-					  (all-the-icons-faicon "magic" "Leader" 0 0) " : Magic menu"))
+        (defvar my/hydra-leader--title (s-concat (all-the-icons-faicon "magic" "Leader" 0 0) " : Magic menu"))
 
-	  (general-def
-	    :states '(normal motion)
-	    my-leader-key 'my/hydra-leader/body)
-
-	  ;; (general-define-key my-leader-key 'my/hydra-leader/body)
-	  ))
-
-
-    ; This feels more comfortable to me than the emacs defaults
-    (mmap "M-j" 'scroll-other-window)
-    (mmap "M-k" 'scroll-other-window-down))
+        (general-def :states '(normal motion) my/leader-key 'my/hydra-leader/body))))
 #+end_src
 ** Hydra - For things that are just so great, you want to keep doing them - hydra
 https://rski.github.io/emacs/hydra/2017/04/08/a-case-for-hydra.html
