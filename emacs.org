@@ -584,6 +584,22 @@ https://github.com/jerrypnz/major-mode-hydra.el/issues/30
     :hook (after-init . hydra-posframe-enable))
 #+end_src
 
+** Hercules - Never need to write another hydra again!
+https://gitlab.com/jjzmajic/hercules.el
+#+begin_src emacs-lisp
+  (use-package hercules :after hydra)
+#+end_src
+
+*** Evil window map
+#+begin_src emacs-lisp
+  (hercules-def
+   :keymap 'evil-window-map
+   :toggle-funs #'my/evil-window-map-mode
+   :transient t)
+
+  (general-def :states '(normal motion) "C-w" 'my/evil-window-map-mode)
+#+end_src
+
 * UI modifications
 One thing I need to consider is whether changing themes in the middle of a session impacts the rest of my UI choices
 ** Init
