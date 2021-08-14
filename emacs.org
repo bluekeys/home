@@ -286,12 +286,6 @@ It helps me to think of a hydra function as a vim mode.
   (use-package hydra :delight)
 #+end_src
 
-*** Hercules - Never need to write another hydra again!
-https://gitlab.com/jjzmajic/hercules.el
-#+begin_src emacs-lisp
-  (use-package hercules :after hydra)
-#+end_src
-
 *** Pretty Hydras
 https://github.com/jerrypnz/major-mode-hydra.el#pretty-hydra
 
