@@ -323,7 +323,7 @@ This is a catch all column.
       (message "Adding a shortcut column to my leader hydra")
       (pretty-hydra-define+ my/hydra-leader ()
         ("Misc"
-         (("c" org-roam-capture "Capture")
+         (("c" org-roam-capture "Capture" :color blue)
           ("H" (find-file "~/Projects/home/emacs.org") "emacs.org" :color blue))))))
 #+end_src
 
@@ -339,7 +339,7 @@ This is a catch all column.
     (with-eval-after-load 'major-mode-hydra
       (message "Attaching hydra to leader - text scale")
       (pretty-hydra-define+ my/hydra-leader ()
-        ("UI" (("s" (my/hydra-text-scale/body) "scale text"))))))
+        ("Misc" (("s" (my/hydra-text-scale/body) "scale text" :color blue))))))
 #+end_src
 
 **** Straight
@@ -378,8 +378,7 @@ This is a catch all column.
     (with-eval-after-load 'major-mode-hydra
       (message "Attaching hydra to leader - straight")
       (pretty-hydra-define+ my/hydra-leader ()
-        ("Text"
-         (("S" (hydra-straight-helper/body) "Straight"))))))
+        ("Tools" (("S" (hydra-straight-helper/body) "Straight" :color blue))))))
 #+end_src
 **** Global org-mode
 #+begin_src emacs-lisp
@@ -412,10 +411,7 @@ This is a catch all column.
       (message "Attaching hydra to leader - global org mode")
       (pretty-hydra-define+ my/hydra-leader ()
         ("Misc"
-         (("o" (progn 
-                 (hydra-global-org/body)
-                 (hydra-push '(my/hydra-leader/body))) 
-           "Org"))))))
+         (("o" (hydra-global-org/body) "Org" :color blue))))))
 #+end_src
 **** Help
 This is an area that I have underexplored and look forward to unlocking more of the potential of in the future.
@@ -513,7 +509,7 @@ My battery status is always on screen. So, I am retiring this code.
        (("b" (battery) "Show battery status")))))
 #+end_src
 
-**** Buffers
+**** COMMENT Buffers
 I want to be able to bury a buffer quickly.
 
 #+begin_src emacs-lisp
@@ -534,9 +530,8 @@ I want to be able to bury a buffer quickly.
 **** emacs-guix
 #+begin_src emacs-lisp
   (with-eval-after-load 'major-mode-hydra
-    (message "Attaching hydra to leader - guix")
     (pretty-hydra-define+ my/hydra-leader ()
-      ("Guix" (("g" (guix-popup) "Guix")))))
+      ("Tools" (("g" (guix-popup) "Guix" :color blue)))))
 #+end_src
 **** Notes
 ***** Quick Capture
@@ -723,14 +718,12 @@ https://www.brautaset.org/articles/2017/hydra-theme-switcher.html
              ("RET" nil "done" :color blue))))
 
   (with-eval-after-load 'major-mode-hydra
-      (message "Attaching hydra to leader - theme change")
-      (pretty-hydra-define+ my/hydra-leader ()
-        ("Shortcuts"
-         (("t" (progn 
-                 (populate-theme-hydra)
-                 (sb/hydra-select-themes/body)
-                 (hydra-push '(my/hydra-leader/body))) 
-           "scale text")))))
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Misc"
+       (("t" (progn 
+               (populate-theme-hydra)
+               (sb/hydra-select-themes/body)) 
+         "change theme" :color blue)))))
 #+end_src
 
 ***** Smart mode line powerline theme
@@ -1050,17 +1043,84 @@ https://www.orgroam.com/manual.html
 Installation
 #+begin_src emacs-lisp
   (use-package org-roam
-    :delight
+    :custom 
+    (org-roam-directory my/org-roam-directory)
+
     :init
-    (setq org-roam-directory my/org-roam-directory)
     (setq org-roam-v2-ack t)
-    :hook (after-init . org-roam-mode)
-    :config
-    (org-roam-setup)
 
-    <<org-roam-daily-templates>>
+    (general-def
+      :prefix-map 'my/roam-map
+      "b" #'org-roam-buffer-toggle
+      "f" #'org-roam-node-find
+      "g" #'org-roam-graph
+      "i" #'org-roam-node-insert
+      "c" #'org-roam-capture
+      "j" #'org-roam-dailies)
 
-    )
+    ;prefix keymap
+    (hercules-def
+     :show-funs #'org-roam-dailies
+     :keymap 'org-roam-dailies-map
+     :transient t)
+
+    (hercules-def
+     :show-funs #'my/roam-mode
+     ;:hide-funs '(org-roam-dailies)
+     :keymap 'my/roam-map)
+
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Misc"
+       (("e" my/roam-mode "my roam mode" :color blue))))
+
+      :hook (after-init . org-roam-mode)
+      :config
+      (org-roam-setup)
+
+      <<org-roam-daily-templates>>
+
+      )
+      ;:mode-hydra
+
+    ;; (defvar my/roam-map (make-sparse-keymap)
+    ;;   "Keymap for my favourite roam related commands.")
+
+    ;; (define-key my/roam-map (kbd "b") 'org-roam-buffer-toggle)
+    ;; (define-key my/roam-map (kbd "f") 'org-roam-node-find)
+    ;; (define-key my/roam-map (kbd "g") 'org-roam-graph)
+    ;; (define-key my/roam-map (kbd "i") 'org-roam-node-insert)
+    ;; (define-key my/roam-map (kbd "c") 'org-roam-capture)
+    ;; (define-key my/roam-map (kbd "j") 'org-roam-dailies-capture-today)
+
+    ;; (hercules-def
+    ;;  :keymap 'my/roam-map
+    ;;  :transient 't)
+
+    ;; ;parent key map
+    ;;   (hercules-def
+    ;;    :toggle-funs #'org-roam-mode
+    ;;    :keymap 'org-roam-mode-map
+    ;;    :transient 't)
+
+    ;; ;keymap
+    ;;   (hercules-def
+    ;;    :toggle-funs #'org-roam-node
+    ;;    :keymap 'org-roam-node-map
+    ;;    :transient 't)
+
+    ;; ;keymap
+    ;;   (hercules-def
+    ;;    :toggle-funs #'org-roam-preview-section
+    ;;    :keymap 'org-roam-preview-map
+    ;;    :transient 't)
+
+    ;; ;keymap
+    ;;   (hercules-def
+    ;;    :toggle-funs #'org-roam-grep
+    ;;    :keymap 'org-roam-grep-map
+    ;;    :transient 't)
+
+
 #+end_src
 *** COMMENT I'll need a way for quickly capturing ideas.
 - [ ] https://takeonrules.com/2020/12/08/revisiting-hydra-menu-for-org-roam-lookup-in-emacs/
@@ -1255,11 +1315,12 @@ https://github.com/jkitchin/org-ref
 Can evil-window-map be more hydra-like
 #+begin_src emacs-lisp
   (hercules-def
-   :toggle-funs #'org-babel-mode
+   :toggle-funs #'my/org-babel-mode
+   :hide-funs '(org-babel-tangle)
    :keymap 'org-babel-map
    :transient t)
 
-  (define-key org-mode-map (kbd "C-c C-v") #'org-babel-mode)
+  (define-key org-mode-map (kbd "C-c C-v") #'my/org-babel-mode)
 #+end_src
 
 * COMMENT Dashboard
@@ -1748,9 +1809,8 @@ https://lists.gnu.org/archive/html/emacs-devel/2016-01/msg01802.html
 
     (with-eval-after-load 'general
       (pretty-hydra-define+ my/hydra-leader ()
-        ("Magit"
-         (("m" (magit-status)
-           "Status"))))))
+        ("Tools"
+         (("m" (magit-status) "Magit" :color blue))))))
 #+end_src
 ** TODO Forge
 [ ] Ensure forge is loaded from guix on guix systems
