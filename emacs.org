@@ -1803,9 +1803,11 @@ https://lists.gnu.org/archive/html/emacs-devel/2016-01/msg01802.html
     :custom (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
     :config
     (start-process "git-fsck" nil "git" "git" "config" "--global" "transfer.fsckObjects" "true") 
+    (start-process "git-config-github-user" nil "git" "git" "config" "--global" "github.user" "bluekeys" "true") 
     ;(start-process "git-config-email" nil "git" "git" "config" "--global" "user.email" "user@example.com") 
     ;(start-process "git-config-email" nil "git" "git" "config" "--global" "user.name" "user")
     ;(my/leader-key-def "m" '(magit :which-key "magit"))
+     
 
     (with-eval-after-load 'general
       (pretty-hydra-define+ my/hydra-leader ()
@@ -1815,11 +1817,10 @@ https://lists.gnu.org/archive/html/emacs-devel/2016-01/msg01802.html
 ** TODO Forge
 [ ] Ensure forge is loaded from guix on guix systems
 https://github.com/magit/forge
+
+Tokens on github can be review https://github.com/settings/tokens
 #+begin_src emacs-lisp
-  (use-package forge 
-    :delight
-    ;:straight (:built-in t)
-    :after (magit)) ; create a token on github and put it in .authinfo
+  (use-package forge :after magit) ; create a token on github and put it in .authinfo
 #+end_src
 ** TODO evil-magit
 #+begin_src emacs-lisp
