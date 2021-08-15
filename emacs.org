@@ -441,7 +441,7 @@ This is an area that I have underexplored and look forward to unlocking more of 
         ("c" describe-key-briefly)
         ("b" describe-bindings)
         ("f" describe-function)
-        ("w" where-is)
+        ("w" where-is "Find where something's bound")
         ("k" describe-key)
         ("m" describe-mode)
         ("o" describe-symbol)
@@ -456,8 +456,8 @@ This is an area that I have underexplored and look forward to unlocking more of 
 
     (message "Attaching hydra to leader - help")
     (pretty-hydra-define+ my/hydra-leader ()
-      ("Help"
-       (("h" (my/help/body) "Help")))))
+      ("Misc"
+       (("h" (my/help/body) "Help" :color blue)))))
 #+end_src
 ***** Help for emacs
 #+begin_src emacs-lisp
@@ -484,8 +484,8 @@ This is an area that I have underexplored and look forward to unlocking more of 
 
     (message "Attaching hydra to leader - GNU Emacs")
     (pretty-hydra-define+ my/hydra-leader ()
-      ("Emacs"
-       (("E" (my/help-gnu-emacs/body) "Help")))))
+      ("Misc"
+       (("E" (my/help-gnu-emacs/body) "About Emacs" :color blue)))))
 #+end_src
 ***** Help for gnu
 #+begin_src emacs-lisp
