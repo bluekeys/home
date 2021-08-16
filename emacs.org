@@ -3,12 +3,7 @@
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el 
 
 #+BEGIN: org-ql :query "todo: priority:A,B" :columns (todo (priority "P") ((property "agenda-group") "Group") deadline heading) :sort (deadline priority) :take 7 :ts-format "%Y-%m-%d %H:%M"
-| Todo | P | Group | Deadline | Heading                                               |
-|------+---+-------+----------+-------------------------------------------------------|
-| TODO | A |       |          | [[These are the files that are used to build the agenda][These are the files that are used to build the agenda]] |
-| TODO | A |       |          | [[org-roam][org-roam]]                                              |
-| TODO | A |       |          | [[Drill][Drill]]                                                 |
-|      |   |       |          |                                                       |
+
 #+END:
 
 * Lots and lots of ideas were taken from elsewhere.
@@ -316,15 +311,23 @@ As I use use-package, I can use the :mode-hydra keyword to create major mode hyd
 Hydra definitions will be in 1 of 2 places. Here, or the respective mode use-package declaration.
 **** Misc
 This is a catch all column.
-
 #+begin_src emacs-lisp
   (with-eval-after-load 'hydra
     (with-eval-after-load 'major-mode-hydra
       (message "Adding a shortcut column to my leader hydra")
       (pretty-hydra-define+ my/hydra-leader ()
-        ("Misc"
-         (("c" org-roam-capture "Capture" :color blue)
-          ("H" (find-file "~/Projects/home/emacs.org") "emacs.org" :color blue))))))
+        ("Tools"
+         ()
+         "Misc"
+         (("d" dired "Dired" :color blue)
+          ("H" (find-file "~/Projects/home/emacs.org") "emacs.org" :color blue))
+         "Roam"
+         (("j" org-roam-dailies-capture-today "Add journal entry" :color blue)
+          ("J" org-roam-dailies-goto-today "Goto journal" :color blue)
+          ("g" org-roam-insert "Insert" :color blue)
+          ("g" org-roam-graph "Graph" :color blue)
+          ("c" org-roam-capture "Capture" :color blue)
+          ("f" org-roam-node-find "Find" :color blue))))))
 #+end_src
 
 **** UI
@@ -1049,29 +1052,29 @@ Installation
     :init
     (setq org-roam-v2-ack t)
 
-    (general-def
-      :prefix-map 'my/roam-map
-      "b" #'org-roam-buffer-toggle
-      "f" #'org-roam-node-find
-      "g" #'org-roam-graph
-      "i" #'org-roam-node-insert
-      "c" #'org-roam-capture
-      "j" #'org-roam-dailies)
+    ;; (general-def
+    ;;   :prefix-map 'my/roam-map
+    ;;   "b" #'org-roam-buffer-toggle
+    ;;   "f" #'org-roam-node-find
+    ;;   "g" #'org-roam-graph
+    ;;   "i" #'org-roam-node-insert
+    ;;   "c" #'org-roam-capture
+    ;;   "j" #'org-roam-dailies)
 
-    ;prefix keymap
-    (hercules-def
-     :show-funs #'org-roam-dailies
-     :keymap 'org-roam-dailies-map
-     :transient t)
+    ;; ;prefix keymap
+    ;; (hercules-def
+    ;;  :show-funs #'org-roam-dailies
+    ;;  :keymap 'org-roam-dailies-map
+    ;;  :transient t)
 
-    (hercules-def
-     :show-funs #'my/roam-mode
-     ;:hide-funs '(org-roam-dailies)
-     :keymap 'my/roam-map)
+    ;; (hercules-def
+    ;;  :show-funs #'my/roam-mode
+    ;;  :keymap 'my/roam-map
+    ;;  :transient t)
 
-    (pretty-hydra-define+ my/hydra-leader ()
-      ("Misc"
-       (("e" my/roam-mode "my roam mode" :color blue))))
+    ;; (pretty-hydra-define+ my/hydra-leader ()
+    ;;   ("Misc"
+    ;;    (("r" my/roam-mode "Roam" :color blue))))
 
       :hook (after-init . org-roam-mode)
       :config
@@ -1870,13 +1873,40 @@ https://github.com/bbatsov/persp-projectile
 * COMMENT notdeft
 Could be used to search org-roam notes
 https://tero.hasu.is/notdeft/
-* COMMENT Flashcards
-https://orgmode.org/worg/org-contrib/org-drill.html
+* Flashcards
+I'm going to try org-fc instead of org-drill for now. No particular reason.
+https://www.leonrische.me/fc/index.html
 #+begin_src emacs-lisp 
-  (use-package org-drill
-    :delight
+  (use-package org-fc
+    :after hydra
+    :straight (org-fc
+               :type git
+               :repo "https://git.sr.ht/~l3kn/org-fc"
+               :files (:defaults "awk" "demo.org"))
+    :init
+    ;(setq org-fc-directories '("/my-org-files/"))
+    (setq org-fc-directories `(,my/org-roam-directory))
+    (setq org-fc-review-history-file "~/flashcard-review-history.tsv")
     :config
-    (setq org-drill-add-random-noise-to-intervals-p t))
+    (require 'org-fc-hydra)
+    (require 'org-fc-keymap-hint)
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Misc"
+       (("F" org-fc-hydra/body "Flashcards" :color blue))))
+
+    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
+      (kbd "RET") 'org-fc-review-flip
+      (kbd "n") 'org-fc-review-flip
+      (kbd "s") 'org-fc-review-suspend-card
+      (kbd "q") 'org-fc-review-quit)
+
+    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
+      (kbd "a") 'org-fc-review-rate-again
+      (kbd "h") 'org-fc-review-rate-hard
+      (kbd "g") 'org-fc-review-rate-good
+      (kbd "e") 'org-fc-review-rate-easy
+      (kbd "s") 'org-fc-review-suspend-card
+      (kbd "q") 'org-fc-review-quit))
 #+end_src
 
 * COMMENT eReader
