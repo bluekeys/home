@@ -598,188 +598,8 @@ https://gitlab.com/jjzmajic/hercules.el
   (general-def :states '(normal motion) "C-w" 'my/evil-window-map-mode)
 #+end_src
 
-* UI modifications
-One thing I need to consider is whether changing themes in the middle of a session impacts the rest of my UI choices
-** Init
-#+begin_src emacs-lisp
-  (use-package my-ui
-    :straight (:host github :repo "bluekeys/emacs-my-ui" :branch "main")
-    :config
-    (my-ui))
-#+end_src
-** Package definition
-:PROPERTIES:
-:header-args:emacs-lisp: :tangle ~/.emacs.d/straight/repos/emacs-my-ui/my-ui.el
-:END:
-*** Functions
-**** Line highlight
-#+begin_src emacs-lisp 
-  (global-hl-line-mode 1)
-  (set-face-attribute 'hl-line nil 
-                      :box t
-                      :inverse-video nil
-                      :weight 'ultra-bold)
-#+end_src
-
-**** Font
-These files are needed when running guix.
-#+begin_src shell
-  guix install font-abattis-cantarell
-  fc-list
-  fc-cache -f -v
-#+end_src
-
-These fonts suit me currently.
-#+begin_src emacs-lisp
-  (when
-      (eq window-system 'x)
-
-      ;; (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
-      ;; (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
-      ;; (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 160 :weight 'regular)
-
-    (use-package unicode-fonts
-      :delight
-      :config
-      (unicode-fonts-setup)
-        ; (set-fontset-font "fontset-default" nil "DejaVu Sans Mono" nil 'append)
-        ; (set-face-attribute 'default nil :family "DejaVu")
-        ; (set-fontset-font "fontset-startup" nil "DejaVu Sans Mono" nil 'append)
-      ))
-
-  (when
-      (eq window-system 'w32)
-
-      ;; (set-face-attribute 'default nil        :font "Noto Mono" :height 110)
-      ;; (set-face-attribute 'fixed-pitch nil    :font "Noto Mono" :height 110)
-      ;; (set-face-attribute 'variable-pitch nil :font "-outline-Noto Serif Thin-thin-normal-normal-serif-*-*-*-*-p-*-iso10646-1" :height 160)
-
-    (use-package unicode-fonts
-      :delight
-      :config
-      (unicode-fonts-setup)
-        ;(set-fontset-font "fontset-default" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
-        ;(set-face-attribute 'default nil :family "Consolas")
-        ;(set-fontset-font "fontset-startup" nil "-outline-Consolas-normal-r-normal-normal-14-97-96-96-c-*-iso8859-1" nil 'append)
-      ))
-#+end_src
-**** Fonts
-#+begin_src emacs-lisp
-;(set-frame-font "Fantasque Sans Mono-14" nil t)
-;(set-frame-font "Source Code Pro-14" nil t)
-  (defvar my/fixed-pitch-font "Noto Mono")
-  (defvar my/fixed-pitch-height 110)
-  (defvar my/variable-pitch "Cantarell")
-  (defvar my/variable-pitch-height 160)
-#+end_src
-
-**** Theme
-***** Theme loading functions
-https://www.brautaset.org/articles/2017/hydra-theme-switcher.html
-****** Disable all themes
-#+begin_src emacs-lisp
-  (defun sb/disable-all-themes ()
-    (interactive)
-    (mapc #'disable-theme custom-enabled-themes))
-#+end_src
-****** Load theme
-#+begin_src emacs-lisp
-  (defun sb/load-theme (theme)
-    "Enhance `load-theme' by first disabling enabled themes."
-    (sb/disable-all-themes)
-    (load-theme theme t)
-    (sml/apply-theme 'light-powerline))
-#+end_src
-****** A theme switching hydra
-#+begin_src emacs-lisp
-  (setq sb/hydra-selectors
-        "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-  (defun sb/sort-themes (themes)
-    (sort themes
-          (lambda (a b)
-            (string<
-             (symbol-name a)
-             (symbol-name b)))))
-
-  (defun sb/hydra-load-theme-heads (themes)
-    (mapcar* (lambda (a b)
-               (list (char-to-string a)
-                     `(sb/load-theme ',b)
-                     (symbol-name b)))
-             sb/hydra-selectors themes))
-
-  (defun populate-theme-hydra ()
-    (interactive)
-    (eval `(defhydra sb/hydra-select-themes
-             (:hint nil :color pink)
-             "Select Theme"
-             ,@(sb/hydra-load-theme-heads
-                (sb/sort-themes
-                 (custom-available-themes)))
-             ("DEL" (sb/disable-all-themes))
-             ("RET" nil "done" :color blue))))
-
-  (with-eval-after-load 'major-mode-hydra
-    (pretty-hydra-define+ my/hydra-leader ()
-      ("Misc"
-       (("t" (progn 
-               (populate-theme-hydra)
-               (sb/hydra-select-themes/body)) 
-         "change theme" :color blue)))))
-#+end_src
-
-***** Smart mode line powerline theme
-#+begin_src emacs-lisp
-  (use-package smart-mode-line-powerline-theme)
-#+end_src
-
-***** Apply a theme
-#+begin_src emacs-lisp
-  (use-package doom-themes
-    :after smart-mode-line
-    :delight
-    :config
-                                          ;(load-theme 'doom-snazzy t
-                                          ;(load-theme 'doom-manegarm t
-                                          ;(load-theme 'whiteboard t)
-                                          ;(load-theme 'doom-sourcerer t)
-    (sb/load-theme 'doom-one-light))
-#+end_src
-**** Modeline
-***** smart modeline
-#+begin_src emacs-lisp
-  (use-package smart-mode-line
-    :after smart-mode-line-powerline-theme
-
-    :init
-    (setq sml/no-confirm-load-theme t)
-    (setq sml/vc-mode-show-backend t)
-
-    :config
-    (sml/setup)
-    ;(sml/apply-theme 'light-powerline)
-    )
-#+end_src
-**** Minibuffer
-***** eldoc-mode shows documentation in the minibuffer when writing code
-http://www.emacswiki.org/emacs/ElDoc
-#+begin_src emacs-lisp
-  (add-hook 'emacs-lisp-mode-hook 'turn-on-eldoc-mode)
-  (add-hook 'lisp-interaction-mode-hook 'turn-on-eldoc-mode)
-  (add-hook 'ielm-mode-hook 'turn-on-eldoc-mode)
-#+end_src
-**** Nyan-mode
-Just a little bit of fun, but way cooler than a scrollbar :)
-#+begin_src emacs-lisp
-    (use-package nyan-mode
-      :delight
-      :custom (nyan-wavy-trail 't)
-      :config 
-      (nyan-mode)
-      (nyan-start-animation))
-#+end_src
-**** Free as much screen real-estate as possible
+* Appearance and UI modifications
+** Free as much screen real-estate as possible
 It's fine, the tooltip can stay, it'll display in the echo area.
 #+begin_src emacs-lisp
   (tooltip-mode t)
@@ -796,55 +616,52 @@ As above
 #+begin_src emacs-lisp
   (menu-bar-mode 0) ; so long file -> menu
 #+end_src
-**** Bell
+** yes/no => y/n
+Kiss, right?
+#+begin_src emacs-lisp
+  (fset 'yes-or-no-p 'y-or-n-p)
+#+end_src
+** Bell
 I'm not a big fan of noise, but I do like the visible bell
 #+begin_src emacs-lisp
   (setq visible-bell t)
   (setq ring-bell-function nil) ; I wonder what other people are doing with this setting?
 #+end_src
-**** Cursor blinking
+** Cursor blinking
 I find a blinking cursor can be distracting
 #+begin_src emacs-lisp 
   (blink-cursor-mode 0)
 #+end_src
-**** Dialog boxes
+** Dialog boxes
 I don't think dialog boxes are my style.
 #+begin_src emacs-lisp
   (setq use-dialog-box nil)
 #+end_src
-**** Frame transparency
+** Frame transparency
 #+begin_src emacs-lisp
   (set-frame-parameter (selected-frame) 'alpha '(100 . 100))
   (add-to-list 'default-frame-alist '(alpha . (100 . 100)))
   (set-frame-parameter (selected-frame) 'fullscreen 'maximized)
   (add-to-list 'default-frame-alist '(fullscreen . maximized))
 #+end_src
-**** Icons
+** Icons
 #+begin_src emacs-lisp
   (use-package all-the-icons :delight)
 #+end_src
-**** Line numbers
+** Line numbers
 I prefer line numbers in most modes for pair programming etc, but have found enabling them on a per-mode basis rather than globally works best.
 #+begin_src emacs-lisp
   (global-display-line-numbers-mode 0)
   (dolist (mode '(elisp-mode-hook))
     (add-hook mode (lambda () (display-line-numbers-mode 1))))
 #+end_src
-**** Parenthesis colour matching
+** Parenthesis colour matching
 #+begin_src emacs-lisp 
   (use-package rainbow-delimiters
     :delight
     :hook (prog-mode . rainbow-delimiters-mode))
 #+end_src
-**** Highlight s-exp
-https://github.com/daimrod/highlight-sexp
-#+begin_src emacs-lisp 
-  ;(use-package highlight-sexp
-  ;  :delight
-  ;  :hook (prog-mode . highlight-sexp-mode)
-  ;  :custom ((hl-sexp-face hl-line)))
-#+end_src
-**** Scrolling
+** Scrolling
 One line at a time.
 #+begin_src emacs-lisp
   (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
@@ -861,12 +678,7 @@ Keyboard scroll one line at a time
 #+begin_src emacs-lisp
   (setq scroll-step 1)
 #+end_src
-**** yes/no => y/n
-Kiss, right?
-#+begin_src emacs-lisp
-  (fset 'yes-or-no-p 'y-or-n-p)
-#+end_src
-**** Org related UI tweaks
+** Org related UI tweaks
 TIP: use describe-face org- if you think something isn't looking its best
 
 #+begin_src emacs-lisp
@@ -909,7 +721,7 @@ TIP: use describe-face org- if you think something isn't looking its best
         (set-face-attribute 'org-document-title nil :height 4.0))))
 #+end_src
 
-***** Bullets
+*** Bullets
 #+begin_src emacs-lisp
   (use-package org-bullets
     :delight
@@ -917,22 +729,190 @@ TIP: use describe-face org- if you think something isn't looking its best
     :hook (org-mode . org-bullets-mode)
     :custom (org-bullets-bullet-list '("➊" "➋" "➌" "➍" "➎" "➏" "➐" "➑" "➒")))
 #+end_src
-**** COMMENT Posframe
-Postframe can popup a frame at point.
+** Margins
 #+begin_src emacs-lisp
-  (use-package posframe)
+  (setq-default fringes-outside-margins t)
+  (setq-default left-margin-width 1)
+  (setq-default right-margin-width 1)
 #+end_src
-*** autoloads
-    #+begin_src emacs-lisp
-      ;;;###autoload
-      (defun my-ui ()
-        (interactive)
-        (message "UI"))
-    #+end_src
-*** provide
-    #+begin_src emacs-lisp
-      (provide 'my-ui)
-    #+end_src
+** Fonts
+#+begin_src emacs-lisp
+;(set-frame-font "Fantasque Sans Mono-14" nil t)
+;(set-frame-font "Source Code Pro-14" nil t)
+  (defvar my/fixed-pitch-font "Noto Mono")
+  (defvar my/fixed-pitch-height 110)
+  (defvar my/variable-pitch "Cantarell")
+  (defvar my/variable-pitch-height 160)
+#+end_src
+
+** Modeline
+*** COMMENT smart modeline
+#+begin_src emacs-lisp
+  (use-package smart-mode-line
+    :after smart-mode-line-powerline-theme
+
+    :init
+    (setq sml/no-confirm-load-theme t)
+    (setq sml/vc-mode-show-backend t)
+
+    :config
+    (sml/setup)
+    ;(sml/apply-theme 'light-powerline)
+    )
+#+end_src
+*** Move modeline to the top
+#+begin_src emacs-lisp
+  (setq-default header-line-format mode-line-format)
+  (setq-default mode-line-format nil)
+#+end_src
+** Theme
+*** Theme loading functions
+https://www.brautaset.org/articles/2017/hydra-theme-switcher.html
+**** Disable all themes
+#+begin_src emacs-lisp
+  (defun sb/disable-all-themes ()
+    (interactive)
+    (mapc #'disable-theme custom-enabled-themes))
+#+end_src
+**** Load theme
+#+begin_src emacs-lisp
+  (defun sb/load-theme (theme)
+    "Enhance `load-theme' by first disabling enabled themes."
+    (sb/disable-all-themes)
+    (load-theme theme t)
+    (sml/apply-theme 'light-powerline))
+#+end_src
+**** A theme switching hydra
+#+begin_src emacs-lisp
+  (setq sb/hydra-selectors
+        "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+  (defun sb/sort-themes (themes)
+    (sort themes
+          (lambda (a b)
+            (string<
+             (symbol-name a)
+             (symbol-name b)))))
+
+  (defun sb/hydra-load-theme-heads (themes)
+    (mapcar* (lambda (a b)
+               (list (char-to-string a)
+                     `(sb/load-theme ',b)
+                     (symbol-name b)))
+             sb/hydra-selectors themes))
+
+  (defun populate-theme-hydra ()
+    (interactive)
+    (eval `(defhydra sb/hydra-select-themes
+             (:hint nil :color pink)
+             "Select Theme"
+             ,@(sb/hydra-load-theme-heads
+                (sb/sort-themes
+                 (custom-available-themes)))
+             ("DEL" (sb/disable-all-themes))
+             ("RET" nil "done" :color blue))))
+
+  (with-eval-after-load 'major-mode-hydra
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Misc"
+       (("t" (progn 
+               (populate-theme-hydra)
+               (sb/hydra-select-themes/body)) 
+         "change theme" :color blue)))))
+#+end_src
+
+*** COMMENT Smart mode line powerline theme
+#+begin_src emacs-lisp
+  (use-package smart-mode-line-powerline-theme)
+#+end_src
+
+*** COMMENT Apply a doom theme
+#+begin_src emacs-lisp
+  (use-package doom-themes
+    :after smart-mode-line
+    :delight
+    :config
+                                          ;(load-theme 'doom-snazzy t
+                                          ;(load-theme 'doom-manegarm t
+                                          ;(load-theme 'whiteboard t)
+                                          ;(load-theme 'doom-sourcerer t)
+    (sb/load-theme 'doom-one-light))
+#+end_src
+
+*** COMMENT Moody modeline
+#+begin_src emacs-lisp
+  (use-package moody
+    :config
+    (setq x-underline-at-descent-line t)
+    (moody-replace-mode-line-buffer-identification)
+    (moody-replace-vc-mode))
+#+end_src
+
+*** Apply modus theme
+https://protesilaos.com/modus-themes/
+#+begin_src emacs-lisp
+  (use-package modus-themes
+    :ensure
+    ;:after (moody)
+    :init
+    ;; Add all you customizations priot to loading the themes
+    (setq modus-themes-italit-constructs t
+          modus-themes-success-deuteranopia t
+          modus-themes-bold-constructs t
+          modus-themes-italic-constructs t
+          modus-themes-links '(neutral-underline faint background)
+          modus-themes-prompts '(intense background gray)
+          modus-themes-mode-line '(moody borderless accented)
+          face-near-same-color-threshold 70000
+          x-underline-at-descent-line t
+          modus-themes-completions 'opinionated
+          modus-themes-fringes 'intense
+          modus-themes-lang-checkers '(straight-underline)
+          modus-themes-hl-line '(accented)
+          modus-themes-subtle-line-numbers t
+          modus-themes-paren-match '(intense underline)
+          modus-themes-region '(bg-only no-extend)
+          modus-themes-diffs '(bg-only)
+          modus-themes-org-blocks 'tinted-background
+          org-src-fontify-natively t
+          org-fontify-quote-and-verse-blocks t
+          modus-themes-org-agenda
+          '((header-block . (variable-pitch scale-title))
+            (header-date . (grayscale workaholic bold-today))
+            (scheduled . uniform)
+            (habit . traffic-light))
+          modus-themes-headings
+          '((1 . (background overline))
+            (2 . (overline rainbow))
+            (t . (monochrome)))
+          modus-themes-scale-headings t
+          modus-themes-scale-1 1.05
+          modus-themes-scale-2 1.1
+          modus-themes-scale-3 1.15
+          modus-themes-scale-4 1.2
+          modus-themes-scale-title 1.3
+          )
+
+    ;; Main typeface
+    (set-face-attribute 'default nil :family "DejaVu Sans Mono" :height 110)
+
+    ;; Proportionately spaced typeface
+    (set-face-attribute 'variable-pitch nil :family "DejaVu Serif" :height 1.0)
+
+    ;; Monospaced typeface
+    (set-face-attribute 'fixed-pitch nil :family "DejaVu Sans Mono" :height 1.0)
+
+    ;; Load the theme files before enabling a theme
+    (modus-themes-load-themes)
+    :config
+    ;; Load the theme of your choice:
+    (modus-themes-load-operandi) ;; OR (modus-themes-load-vivendi)
+    (hl-line-mode)
+    (show-paren-mode)
+
+    :bind ("<f5>" . modus-themes-toggle))
+#+end_src
+
 * Org-mode
 #+begin_src emacs-lisp
   (with-eval-after-load 'all-the-icons
