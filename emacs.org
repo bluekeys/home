@@ -1308,6 +1308,89 @@ Can evil-window-map be more hydra-like
   (define-key org-mode-map (kbd "C-c C-v") #'my/org-babel-mode)
 #+end_src
 
+* Git / version management / magit
+https://lists.gnu.org/archive/html/emacs-devel/2016-01/msg01802.html
+#+begin_src emacs-lisp 
+  (use-package magit
+    :delight
+    :custom (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+    :config
+    (start-process "git-fsck" nil "git" "git" "config" "--global" "transfer.fsckObjects" "true") 
+    (start-process "git-config-github-user" nil "git" "git" "config" "--global" "github.user" "bluekeys" "true") 
+    ;(start-process "git-config-email" nil "git" "git" "config" "--global" "user.email" "user@example.com") 
+    ;(start-process "git-config-email" nil "git" "git" "config" "--global" "user.name" "user")
+    ;(my/leader-key-def "m" '(magit :which-key "magit"))
+
+    (with-eval-after-load 'general
+      (pretty-hydra-define+ my/hydra-leader ()
+        ("Tools"
+         (("m" (magit-status) "Magit" :color blue))))))
+#+end_src
+** Forge
+https://github.com/magit/forge
+
+Tokens on github can be review https://github.com/settings/tokens
+#+begin_src emacs-lisp
+  (use-package forge :after magit) ; create a token on github and put it in .authinfo
+#+end_src
+** COMMENT Dired git
+https://github.com/conao3/dired-git.el
+#+begin_src emacs-lisp
+  (use-package dired-git
+    :init (promise-rejection-tracking-enable '((all-rejections . t)))
+    :after (all-the-icons)
+    :hook (dired-mode . dired-git-mode))
+#+end_src
+** Git Gutter
+#+begin_src emacs-lisp
+
+#+end_src
+** TODO evil-magit
+#+begin_src emacs-lisp
+  ; (use-package evil-magit :after magit)
+#+end_src
+** TODO ghub
+#+begin_src emacs-lisp
+  ; (use-package ghub
+  ; )
+#+end_src
+** TODO magit-todos
+* Flashcards
+I'm going to try org-fc instead of org-drill for now. No particular reason.
+https://www.leonrische.me/fc/index.html
+#+begin_src emacs-lisp 
+  (use-package org-fc
+    :after hydra
+    :straight (org-fc
+               :type git
+               :repo "https://git.sr.ht/~l3kn/org-fc"
+               :files (:defaults "awk" "demo.org"))
+    :init
+    ;(setq org-fc-directories '("/my-org-files/"))
+    (setq org-fc-directories `(,my/org-roam-directory))
+    (setq org-fc-review-history-file "~/flashcard-review-history.tsv")
+    :config
+    (require 'org-fc-hydra)
+    (require 'org-fc-keymap-hint)
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Misc"
+       (("F" org-fc-hydra/body "Flashcards" :color blue))))
+
+    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
+      (kbd "RET") 'org-fc-review-flip
+      (kbd "n") 'org-fc-review-flip
+      (kbd "s") 'org-fc-review-suspend-card
+      (kbd "q") 'org-fc-review-quit)
+
+    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
+      (kbd "a") 'org-fc-review-rate-again
+      (kbd "h") 'org-fc-review-rate-hard
+      (kbd "g") 'org-fc-review-rate-good
+      (kbd "e") 'org-fc-review-rate-easy
+      (kbd "s") 'org-fc-review-suspend-card
+      (kbd "q") 'org-fc-review-quit))
+#+end_src
+
 * COMMENT Dashboard
 https://github.com/emacs-dashboard/emacs-dashboard 
 
@@ -1780,43 +1863,6 @@ https://elpa.gnu.org/packages/csv-mode.html
   (define-key org-mode-map (kbd "C-c C-v") #'org-babel-mode)
 #+end_src
 
-* Git / version management / magit
-https://lists.gnu.org/archive/html/emacs-devel/2016-01/msg01802.html
-#+begin_src emacs-lisp 
-  (use-package magit
-    :delight
-    :custom (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-    :config
-    (start-process "git-fsck" nil "git" "git" "config" "--global" "transfer.fsckObjects" "true") 
-    (start-process "git-config-github-user" nil "git" "git" "config" "--global" "github.user" "bluekeys" "true") 
-    ;(start-process "git-config-email" nil "git" "git" "config" "--global" "user.email" "user@example.com") 
-    ;(start-process "git-config-email" nil "git" "git" "config" "--global" "user.name" "user")
-    ;(my/leader-key-def "m" '(magit :which-key "magit"))
-     
-
-    (with-eval-after-load 'general
-      (pretty-hydra-define+ my/hydra-leader ()
-        ("Tools"
-         (("m" (magit-status) "Magit" :color blue))))))
-#+end_src
-** TODO Forge
-[ ] Ensure forge is loaded from guix on guix systems
-https://github.com/magit/forge
-
-Tokens on github can be review https://github.com/settings/tokens
-#+begin_src emacs-lisp
-  (use-package forge :after magit) ; create a token on github and put it in .authinfo
-#+end_src
-** TODO evil-magit
-#+begin_src emacs-lisp
-  ; (use-package evil-magit :after magit)
-#+end_src
-** TODO ghub
-#+begin_src emacs-lisp
-  ; (use-package ghub
-  ; )
-#+end_src
-** TODO magit-todos
 * COMMENT Projects / Projectile / Play nicely with projects
 https://docs.projectile.mx/en/latest/
 Configure projectile, perspective, persp-projectile and maybe shackle too.
@@ -1855,42 +1901,6 @@ https://github.com/bbatsov/persp-projectile
 * COMMENT notdeft
 Could be used to search org-roam notes
 https://tero.hasu.is/notdeft/
-* Flashcards
-I'm going to try org-fc instead of org-drill for now. No particular reason.
-https://www.leonrische.me/fc/index.html
-#+begin_src emacs-lisp 
-  (use-package org-fc
-    :after hydra
-    :straight (org-fc
-               :type git
-               :repo "https://git.sr.ht/~l3kn/org-fc"
-               :files (:defaults "awk" "demo.org"))
-    :init
-    ;(setq org-fc-directories '("/my-org-files/"))
-    (setq org-fc-directories `(,my/org-roam-directory))
-    (setq org-fc-review-history-file "~/flashcard-review-history.tsv")
-    :config
-    (require 'org-fc-hydra)
-    (require 'org-fc-keymap-hint)
-    (pretty-hydra-define+ my/hydra-leader ()
-      ("Misc"
-       (("F" org-fc-hydra/body "Flashcards" :color blue))))
-
-    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
-      (kbd "RET") 'org-fc-review-flip
-      (kbd "n") 'org-fc-review-flip
-      (kbd "s") 'org-fc-review-suspend-card
-      (kbd "q") 'org-fc-review-quit)
-
-    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
-      (kbd "a") 'org-fc-review-rate-again
-      (kbd "h") 'org-fc-review-rate-hard
-      (kbd "g") 'org-fc-review-rate-good
-      (kbd "e") 'org-fc-review-rate-easy
-      (kbd "s") 'org-fc-review-suspend-card
-      (kbd "q") 'org-fc-review-quit))
-#+end_src
-
 * COMMENT eReader
 https://depp.brause.cc/nov.el/
 #+begin_src emacs-lisp 
