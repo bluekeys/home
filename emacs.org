@@ -1341,6 +1341,15 @@ https://github.com/conao3/dired-git.el
     :after (all-the-icons)
     :hook (dired-mode . dired-git-mode))
 #+end_src
+** Dired git info
+#+begin_src emacs-lisp
+  (use-package dired-git-info
+    :init
+    (with-eval-after-load 'dired
+      (setq dgi-auto-hide-details-p nil)
+      (define-key dired-mode-map ")" 'dired-git-info-mode)))
+#+end_src
+
 ** Git Gutter
 #+begin_src emacs-lisp
 
