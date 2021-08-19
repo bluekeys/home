@@ -947,6 +947,8 @@ https://protesilaos.com/modus-themes/
            ("j" org-forward-element :color red)
            ("k" org-backward-element :color red)
            ("l" org-next-visible-heading :color red))))
+        :config
+        (setq org-log-into-drawer t)
         :custom
         (org-catch-invisible-edits 'smart)
         <<custom-org-babel>>
