@@ -1349,10 +1349,85 @@ https://github.com/conao3/dired-git.el
       (setq dgi-auto-hide-details-p nil)
       (define-key dired-mode-map ")" 'dired-git-info-mode)))
 #+end_src
-
-** Git Gutter
+** diff-hl
 #+begin_src emacs-lisp
+  (use-package diff-hl
+    :config
+    (global-diff-hl-mode)
+  ;; (let* ((height (frame-char-height))
+  ;;        (width 2)
+  ;;        (ones (1- (expt 2 width)))
+  ;;        (bits (make-vector height ones)))
+  ;;   (define-fringe-bitmap 'my-diff-hl-bitmap bits height width))
+  ;; (setq diff-hl-fringe-bmp-function (lambda (type pos) 'my-diff-hl-bitmap))
+    )
+#+end_src
 
+** COMMENT Git Gutter
+https://github.com/emacsorphanage/git-gutter
+#+begin_src emacs-lisp
+  (use-package git-gutter
+    :defer t
+    :hook ((markdown-mode . git-gutter-mode)
+           (prog-mode . git-gutter-mode)
+           (conf-mode . git-gutter-mode))
+    :init
+    :config
+    (setq git-gutter:disabled-modes '(asm-mode image-mode)
+          git-gutter:update-interval 1
+          git-gutter:window-width 2
+          git-gutter:ask-p nil)
+
+    (defhydra hydra-git-gutter (:body-pre (git-gutter-mode 1)
+                           :hint nil)
+      "
+   Git gutter:
+     _j_: next hunk        _s_tage hunk     _q_uit
+     _k_: previous hunk    _r_evert hunk    _Q_uit and deactivate git-gutter
+     ^ ^                   _p_opup hunk
+     _h_: first hunk
+     _l_: last hunk        set start _R_evision
+   "
+      ("j" git-gutter:next-hunk)
+      ("k" git-gutter:previous-hunk)
+      ("h" (progn (goto-char (point-min))
+                  (git-gutter:next-hunk 1)))
+      ("l" (progn (goto-char (point-min))
+                  (git-gutter:previous-hunk 1)))
+      ("s" git-gutter:stage-hunk)
+      ("r" git-gutter:revert-hunk)
+      ("p" git-gutter:popup-hunk)
+      ("R" git-gutter:set-start-revision)
+      ("q" nil :color blue)
+      ("Q" (progn (git-gutter-mode -1)
+                  ;; git-gutter-fringe doesn't seem to
+                  ;; clear the markup right away
+                  (sit-for 0.1)
+                  (git-gutter:clear))
+       :color blue)))
+
+#+end_src
+
+** COMMENT Git gutter fringe
+#+begin_src emacs-lisp
+  (use-package git-gutter-fringe
+    :diminish git-gutter-mode
+    :after git-gutter
+    :demand fringe-helper
+    :config
+    ;; subtle diff indicators in the fringe
+    ;; places the git gutter outside the margins.
+    (setq-default fringes-outside-margins t)
+    ;; thin fringe bitmaps
+    (define-fringe-bitmap 'git-gutter-fr:added
+      [224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224]
+      nil nil 'center)
+    (define-fringe-bitmap 'git-gutter-fr:modified
+      [224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224 224]
+      nil nil 'center)
+    (define-fringe-bitmap 'git-gutter-fr:deleted
+      [0 0 0 0 0 0 0 0 0 0 0 0 0 128 192 224 240 248]
+      nil nil 'center))
 #+end_src
 ** TODO evil-magit
 #+begin_src emacs-lisp
