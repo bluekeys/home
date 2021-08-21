@@ -12,6 +12,7 @@ https://countvajhula.com/2020/12/27/turn-your-emacs-d-into-an-emacs-distribution
 https://en.liujiacai.net/2021/05/21/emacs-package/
 http://vimdoc.sourceforge.net/htmldoc/vimindex.html#g
 https://wikemacs.org/wiki/Discoverability#Hercules.2C_joining_which-key-mode_and_Hydras
+http://trey-jackson.blogspot.com/2010/04/emacs-tip-36-abort-minibuffer-when.html
 * A explanation of how it all works
 Distraction-free, goal-driven, task-oriented.
 I would like to see that work is driven by org mode.
@@ -37,6 +38,41 @@ To aid debugging, each top level headline is configured to tangle into a distinc
 * Early init
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
   (setq package-enable-at-startup nil) ;; Recommended by straight.el to prevent package.el loading packages prior to their init-file loading
+#+end_src
+** Free as much screen real-estate as possible
+It's fine, the tooltip can stay, it'll display in the echo area.
+#+begin_src emacs-lisp
+  (tooltip-mode t)
+#+end_src
+I don't need scrollbars, I have nyan mode
+#+begin_src emacs-lisp
+  (scroll-bar-mode -1)
+#+end_src
+Bye bye pretty button bar, I prefer M-`
+#+begin_src emacs-lisp
+  (tool-bar-mode -1)
+#+end_src
+As above
+#+begin_src emacs-lisp
+  (menu-bar-mode 0) ; so long file -> menu
+#+end_src
+** Taken from "The modern emacs"
+#+begin_src emacs-lisp
+  (push '(menu-bar-lines . 0) default-frame-alist)
+  (push '(tool-bar-lines . 0) default-frame-alist)
+  (push '(vertical-scroll-bars) default-frame-alist)
+  (push '(internal-border-width . 0) default-frame-alist)
+
+  (setq-default fringes-outside-margins t)
+  (setq-default left-margin-width 1)
+  (setq-default left-margin-width 1)
+
+  (setq use-dialog-box nil)
+  (setq use-file-dialog nil)
+  (setq inhibit-startup-screen t)
+
+  (setq-default header-line-format mode-line-format)
+  (setq-default mode-line-format nil)
 #+end_src
 
 * Initialise!
@@ -599,23 +635,6 @@ https://gitlab.com/jjzmajic/hercules.el
 #+end_src
 
 * Appearance and UI modifications
-** Free as much screen real-estate as possible
-It's fine, the tooltip can stay, it'll display in the echo area.
-#+begin_src emacs-lisp
-  (tooltip-mode t)
-#+end_src
-I don't need scrollbars, I have nyan mode
-#+begin_src emacs-lisp
-  (scroll-bar-mode -1)
-#+end_src
-Bye bye pretty button bar, I prefer M-`
-#+begin_src emacs-lisp
-  (tool-bar-mode -1)
-#+end_src
-As above
-#+begin_src emacs-lisp
-  (menu-bar-mode 0) ; so long file -> menu
-#+end_src
 ** yes/no => y/n
 Kiss, right?
 #+begin_src emacs-lisp
@@ -913,6 +932,124 @@ https://protesilaos.com/modus-themes/
     :bind ("<f5>" . modus-themes-toggle))
 #+end_src
 
+** Completion UI - Icomplete vertical
+#+begin_src emacs-lisp
+  (use-package icomplete-vertical
+    :demand t
+    :custom
+    (completion-styles '(partial-completion substring))
+    (completion-category-overrides '((file (styles basic substring))))
+    (read-file-name-completion-ignore-case t)
+    (read-buffer-completion-ignore-case t)
+    (completion-ignore-case t)
+    :config
+    (icomplete-mode)
+    (icomplete-vertical-mode)
+    :bind (:map icomplete-minibuffer-map
+                ("<down>" . icomplete-forward-completions)
+                ("C-n" . icomplete-forward-completions)
+                ("<up>" . icomplete-backward-completions)
+                ("C-p" . icomplete-backward-completions)
+                ("C-v" . icomplete-vertical-toggle)))
+#+end_src
+
+** COMMENT Minibuffer
+https://github.com/raxod502/selectrum/wiki/Additional-Configuration#display-minibuffer-in-a-child-frame-with-mini-frame
+#+begin_src emacs-lisp
+  (use-package mini-frame
+    :custom
+    ((mini-frame-show-parameters ((top . 10)
+                                 (width . 0.7)
+                                 (left . 0.5))))
+
+    :config
+    (setq x-gtk-resize-child-frames 'resize-mode)
+    (mini-frame-mode +1))
+#+end_src
+
+* Behaviour
+
+** Incremental narrowing
+#+begin_src emacs-lisp
+  (use-package selectrum
+    :config
+    (selectrum-mode +1))
+
+  (use-package selectrum-prescient
+    :after (selectrum)
+    :config
+    (selectrum-prescient-mode +1)
+    (prescient-persist-mode +1))
+#+end_src
+
+** Completion
+*** Consult
+https://github.com/minad/consult
+#+begin_src emacs-lisp
+  (use-package consult)
+#+end_src
+
+*** Vertico
+https://github.com/minad/vertico
+#+begin_src emacs-lisp
+  (use-package vertico
+    :init
+    (vertico-mode))
+#+end_src
+
+** Acting on targets
+https://github.com/oantolin/embark/
+#+begin_src emacs-lisp
+  (use-package embark
+    :ensure t
+
+    :bind
+    (("C-." . embark-act)         ;; pick some comfortable binding
+     ("C-;" . embark-dwim)        ;; good alternative: M-.
+     ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+
+    :init
+
+    ;; Optionally replace the key help with a completing-read interface
+    (setq prefix-help-command #'embark-prefix-help-command)
+
+    :config
+
+    ;; Hide the mode line of the Embark live/completions buffers
+    (add-to-list 'display-buffer-alist
+                 '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                   nil
+                   (window-parameters (mode-line-format . none)))))
+
+  ;; Consult users will also want the embark-consult package.
+  (use-package embark-consult
+    :ensure t
+    :after (embark consult)
+    :demand t ; only necessary if you have the hook below
+    ;; if you want to have consult previews as you move around an
+    ;; auto-updating embark collect buffer
+    :hook
+    (embark-collect-mode . consult-preview-at-point-mode))
+#+end_src
+
+** Annotations
+https://github.com/minad/marginalia
+#+begin_src emacs-lisp
+;; Enable richer annotations using the Marginalia package
+(use-package marginalia
+  ;; Either bind `marginalia-cycle` globally or only in the minibuffer
+  :bind (("M-A" . marginalia-cycle)
+         :map minibuffer-local-map
+         ("M-A" . marginalia-cycle))
+
+  ;; The :init configuration is always executed (Not lazy!)
+  :init
+
+  ;; Must be in the :init section of use-package such that the mode gets
+  ;; enabled right away. Note that this forces loading the package.
+  (marginalia-mode))
+#+end_src
+
 * Org-mode
 #+begin_src emacs-lisp
   (with-eval-after-load 'all-the-icons
@@ -1022,6 +1159,15 @@ When I'm running those blocks, I'd like the option for them to run async
     :delight
     :config
     (setq ob-async-no-async-languages-alist '("ipython")))
+#+end_src
+*** Hercules
+#+begin_src emacs-lisp
+  (hercules-def
+   :toggle-funs #'org-babel-mode
+   :keymap 'org-babel-map
+   :transient t)
+
+  (define-key org-mode-map (kbd "C-c C-v") #'org-babel-mode)
 #+end_src
 ** org-roam
 https://www.orgroam.com/manual.html
@@ -1285,6 +1431,7 @@ https://github.com/jkitchin/org-ref
           (("s-Y" . org-download-screenshot)
            ("s-y" . org-download-yank))))
 #+end_src
+** TODO org-webring
 * leetcode
 #+begin_src emacs-lisp
   (use-package leetcode
@@ -1937,16 +2084,6 @@ https://elpa.gnu.org/packages/csv-mode.html
    (setq display-buffer-reuse-frames t)         ; reuse windows in other frames
    (setq even-window-sizes nil)                 ; display-buffer: avoid resizing
  #+end_src
-* COMMENT org-babel
-#+begin_src emacs-lisp
-  (hercules-def
-   :toggle-funs #'org-babel-mode
-   :keymap 'org-babel-map
-   :transient t)
-
-  (define-key org-mode-map (kbd "C-c C-v") #'org-babel-mode)
-#+end_src
-
 * COMMENT Projects / Projectile / Play nicely with projects
 https://docs.projectile.mx/en/latest/
 Configure projectile, perspective, persp-projectile and maybe shackle too.
@@ -2006,7 +2143,6 @@ https://depp.brause.cc/nov.el/
   m  Prompts for a menu item name and opens    
     it    
   q  Closes the info browser    
-* COMMENT org-webring
 * COMMENT bufler.el
 * COMMENT show unstaged changes in the fringe
 * COMMENT proced
