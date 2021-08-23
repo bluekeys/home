@@ -31,10 +31,6 @@ I should record the ideas, using org-capture. I should then refile those ideas i
 
 To aid debugging, each top level headline is configured to tangle into a distinct lisp file. Those files can then be loaded (or not) from init.el.
 
-#+begin_src plantuml :file workflow.png
-
-#+end_src
-
 * Early init
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
   (setq package-enable-at-startup nil) ;; Recommended by straight.el to prevent package.el loading packages prior to their init-file loading
@@ -1052,47 +1048,138 @@ https://github.com/minad/marginalia
 
 * Org-mode
 #+begin_src emacs-lisp
-  (with-eval-after-load 'all-the-icons
-    (with-eval-after-load 'major-mode-hydra
-      (use-package org
-        :delight
-        :straight (:type built-in)
-        :preface
-        (defun my/org-mode-setup ()
-          (my/org-apply-ui)
-          <<org-agenda-files>>
-          <<org-refile-targets>>
-          )
-        :hook ((org-mode . my/org-mode-setup))
-        :mode-hydra 
-        (org-mode
-         ("Clock"
-          (("t" org-timer-start)
-           ("s" org-timer-stop)
-           ;; Need to be at timer
-           ("r" org-timer-set-timer)
-           ;; Print timer value to buffer
-           ("p" org-timer)
-           ("w" (org-clock-in '(4)))
-           ("o" org-clock-out)
-           ;; Visit the clocked task from any buffer
-           ("j" org-clock-goto)
-           ("c" org-capture)
-           ("l" org-capture-goto-last-stored))
-         "Move"
-          (("h" org-previous-visible-heading :color red)
-           ("j" org-forward-element :color red)
-           ("k" org-backward-element :color red)
-           ("l" org-next-visible-heading :color red))))
-        :config
-        (setq org-log-into-drawer t)
-        :custom
-        (org-catch-invisible-edits 'smart)
-        <<custom-org-babel>>
-        <<custom-org-diary>>
-        <<custom-org-notes>>
-        )))
+    (with-eval-after-load 'all-the-icons
+      (with-eval-after-load 'major-mode-hydra
+        (use-package org
+          :delight
+          :straight (:type built-in)
+          :preface
+          (defun my/org-mode-setup ()
+            (my/org-apply-ui)
+            <<org-agenda-files>>
+            <<org-refile-targets>>
+            )
+          :hook ((org-mode . my/org-mode-setup))
+          :mode-hydra 
+          (org-mode
+           ("Clock"
+            (("t" org-timer-start)
+             ("s" org-timer-stop)
+             ;; Need to be at timer
+             ("r" org-timer-set-timer)
+             ;; Print timer value to buffer
+             ("p" org-timer)
+             ("w" (org-clock-in '(4)))
+             ("o" org-clock-out)
+             ;; Visit the clocked task from any buffer
+             ("j" org-clock-goto)
+             ("c" org-capture)
+             ("l" org-capture-goto-last-stored))
+           "Move"
+            (("h" org-previous-visible-heading :color red)
+             ("j" org-forward-element :color red)
+             ("k" org-backward-element :color red)
+             ("l" org-next-visible-heading :color red))))
+          :config
+          (setq org-log-into-drawer t)
+          (require 'ox-org)
+          :custom
+          (org-catch-invisible-edits 'smart)
+          <<custom-org-babel>>
+          <<custom-org-diary>>
+          <<custom-org-notes>>
+          )))
 #+end_src
+*** Org capture templates
+#+begin_src emacs-lisp
+   (setq org-capture-templates
+         '(("r" "Risk" table-line (file+headline (lambda () (buffer-file-name)) "Risks")
+            "|id|%u|%?||")
+           ("a" "Assumption" table-line (file+headline (lambda () (buffer-file-name)) "Assumptions")
+            "")
+           ("i" "Issue" table-line (file+headline (lambda () (buffer-file-name)) "Issues")
+            "")
+           ("d" "Decision" table-line (file+headline (lambda () (buffer-file-name)) "Decisions")
+            "")
+           ("t" "Task" entry (file+headline (lambda () (buffer-file-name)) "Tasks")
+            "** TODO %^{Description}%?\n:LOGBOOK:\n- Added: %U\n:END:")
+           ))
+
+#+end_src
+** org-roam
+https://www.orgroam.com/manual.html
+Installation
+#+begin_src emacs-lisp
+  (use-package org-roam
+    :custom 
+    (org-roam-directory my/org-roam-directory)
+    (org-roam-capture-templates my/org-roam-capture-templates)
+
+    :init
+    (setq org-roam-v2-ack t)
+
+    :hook (after-init . org-roam-mode)
+    :config
+    (org-roam-setup))
+#+end_src
+*** Templates
+- [ ] https://takeonrules.com/2020/12/08/revisiting-hydra-menu-for-org-roam-lookup-in-emacs/
+Progfolio/doct
+
+Everything starts with an idea.
+I can either use org-capture (org)Capture
+or, (org-roam)Daily-notes
+Either way, this will be an inbox for processing later. In a gtd sense.
+I'm going to lean towards using org-roam for things like capture templates.
+
+
+#+begin_src emacs-lisp
+  (defvar my/org-roam-capture-templates
+    '(("d" "default" plain
+       "%?"
+       :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}") :unnarrowed t)
+      ("l" "Programming language" plain
+       "* Characteristics\n\n- Family: %?\n- Inspired by: \n\n* Reference:\n\n"
+       :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}") :unnarrowed t)
+      ("p" "Project" plain
+       "*Description\n\n* Timeline\n\n* Tasks\n* TODO Add initial tasks\n\n* Meetings\n\n* Risks\n\n* Assumptions\n\n* Issues\n\n* Decisions\n\n"
+       :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: Project: ${title}\n#+filetags: Project") :unnarrowed t)
+      ))
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref org-roam-daily-templates
+  (setq org-roam-dailies-capture-templates
+        '(("d" "default" entry
+           "* %?"
+           :if-new (file+head "%<%Y-%m-%d>.org"
+                              "#+title: %<%Y-%m-%d>"))))
+#+end_src
+
+**** Projects
+  ("p" "Project" plain
+   "*Description\n\n* Timeline\n\n* Tasks\n* TODO Add initial tasks\n\n* Meetings\n\n* Risks\n\n* Assumptions\n\n* Issues\n\n* Decisions\n\n"
+   :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: Project: ${title}\n#+filetags: Project") :unnarrowed t)
+
+   Projects make use of :DEADLINE and :SCHEDULED: properties, they are captured in the timeline in a column view.
+
+#+begin_src org :tangle ~/roam/Templates/Project.org
+  ,* Description
+  ,* Timeline
+  Elements with :SCHEDULED: or :DEADLINE: properties are gathered here.
+  ,#+BEGIN: columnview :hlines 1 :id "label" :match "TODO,DEADLINE,SCHEDULED"
+  ,#+END:
+  ,* Tasks
+  ,** TODO Add initial tasks
+  ,* Meetings
+  ,* Risks
+  | ID | Captured On | Description | Mitigation |
+  |----+-------------+-------------+------------|
+  |    |             |             |            |
+  ,* Assumptions
+  ,* Issues
+  ,* Decisions
+#+end_src
+
 ** org-babel
 *** Don't confirm
 #+begin_src emacs-lisp
@@ -1169,111 +1256,6 @@ When I'm running those blocks, I'd like the option for them to run async
 
   (define-key org-mode-map (kbd "C-c C-v") #'org-babel-mode)
 #+end_src
-** org-roam
-https://www.orgroam.com/manual.html
-Installation
-#+begin_src emacs-lisp
-  (use-package org-roam
-    :custom 
-    (org-roam-directory my/org-roam-directory)
-
-    :init
-    (setq org-roam-v2-ack t)
-
-    ;; (general-def
-    ;;   :prefix-map 'my/roam-map
-    ;;   "b" #'org-roam-buffer-toggle
-    ;;   "f" #'org-roam-node-find
-    ;;   "g" #'org-roam-graph
-    ;;   "i" #'org-roam-node-insert
-    ;;   "c" #'org-roam-capture
-    ;;   "j" #'org-roam-dailies)
-
-    ;; ;prefix keymap
-    ;; (hercules-def
-    ;;  :show-funs #'org-roam-dailies
-    ;;  :keymap 'org-roam-dailies-map
-    ;;  :transient t)
-
-    ;; (hercules-def
-    ;;  :show-funs #'my/roam-mode
-    ;;  :keymap 'my/roam-map
-    ;;  :transient t)
-
-    ;; (pretty-hydra-define+ my/hydra-leader ()
-    ;;   ("Misc"
-    ;;    (("r" my/roam-mode "Roam" :color blue))))
-
-      :hook (after-init . org-roam-mode)
-      :config
-      (org-roam-setup)
-
-      <<org-roam-daily-templates>>
-
-      )
-      ;:mode-hydra
-
-    ;; (defvar my/roam-map (make-sparse-keymap)
-    ;;   "Keymap for my favourite roam related commands.")
-
-    ;; (define-key my/roam-map (kbd "b") 'org-roam-buffer-toggle)
-    ;; (define-key my/roam-map (kbd "f") 'org-roam-node-find)
-    ;; (define-key my/roam-map (kbd "g") 'org-roam-graph)
-    ;; (define-key my/roam-map (kbd "i") 'org-roam-node-insert)
-    ;; (define-key my/roam-map (kbd "c") 'org-roam-capture)
-    ;; (define-key my/roam-map (kbd "j") 'org-roam-dailies-capture-today)
-
-    ;; (hercules-def
-    ;;  :keymap 'my/roam-map
-    ;;  :transient 't)
-
-    ;; ;parent key map
-    ;;   (hercules-def
-    ;;    :toggle-funs #'org-roam-mode
-    ;;    :keymap 'org-roam-mode-map
-    ;;    :transient 't)
-
-    ;; ;keymap
-    ;;   (hercules-def
-    ;;    :toggle-funs #'org-roam-node
-    ;;    :keymap 'org-roam-node-map
-    ;;    :transient 't)
-
-    ;; ;keymap
-    ;;   (hercules-def
-    ;;    :toggle-funs #'org-roam-preview-section
-    ;;    :keymap 'org-roam-preview-map
-    ;;    :transient 't)
-
-    ;; ;keymap
-    ;;   (hercules-def
-    ;;    :toggle-funs #'org-roam-grep
-    ;;    :keymap 'org-roam-grep-map
-    ;;    :transient 't)
-
-
-#+end_src
-*** COMMENT I'll need a way for quickly capturing ideas.
-- [ ] https://takeonrules.com/2020/12/08/revisiting-hydra-menu-for-org-roam-lookup-in-emacs/
-Progfolio/doct
-
-Everything starts with an idea.
-I can either use org-capture (org)Capture
-or, (org-roam)Daily-notes
-Either way, this will be an inbox for processing later. In a gtd sense.
-I'm going to lean towards using org-roam for things like capture templates.
-#+begin_src emacs-lisp :noweb-ref org-roam-daily-templates
-  (setq org-roam-dailies-capture-templates
-        '(("d" "default" entry
-           "* %?"
-           :if-new (file+head "%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>"))))
-#+end_src
-  
-*** I'll need a way for Permanently storing notes 
-Permanent notes are split into 2 categories
-- literature notes
-- concept notes
 ** COMMENT Agenda / Super Agenda
 *** These are the files that are used to build the agenda
 https://orgmode.org/manual/Agenda-Files.html#Agenda-Files
@@ -1418,6 +1400,16 @@ https://github.com/alphapapa/org-super-agenda/blob/master/examples.org
   )
 #+end_src
 ** COMMENT Habit
+https://orgmode.org/manual/Tracking-your-habits.html
+There are 2 things needed to make a habit. 1.) Schedule a todo item with a repeater. 2.) Give the item the habit property.
+
+You can make habits visible in the org agenda using K
+
+I prefer to put all my habits into a single file.
+
+#+begin_src emacs-lisp
+  (defconst my/habitfile "~/org/habit.org")
+#+end_src
 ** COMMENT Journal
 ** COMMENT org-ref
 https://github.com/jkitchin/org-ref
