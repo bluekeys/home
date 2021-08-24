@@ -698,8 +698,8 @@ TIP: use describe-face org- if you think something isn't looking its best
 #+end_src
 *** Move modeline to the top
 #+begin_src emacs-lisp
-  (setq-default header-line-format mode-line-format)
-  (setq-default mode-line-format nil)
+  ;(setq-default header-line-format mode-line-format)
+  ;(setq-default mode-line-format nil)
 #+end_src
 ** Theme
 *** Theme loading functions
@@ -846,6 +846,7 @@ https://protesilaos.com/modus-themes/
     (hl-line-mode)
     (show-paren-mode)
 
+  (setq-default header-line-format mode-line-format)
     :bind ("<f5>" . modus-themes-toggle))
 #+end_src
 
@@ -1089,16 +1090,25 @@ I'm going to lean towards using org-roam for things like capture templates.
   Elements with :SCHEDULED: or :DEADLINE: properties are gathered here.
   ,#+BEGIN: columnview :hlines 1 :id "label" :match "TODO,DEADLINE,SCHEDULED"
   ,#+END:
-  ,* Tasks
-  ,** TODO Add initial tasks
-  ,* Meetings
   ,* Risks
   | ID | Captured On | Description | Mitigation |
   |----+-------------+-------------+------------|
   |    |             |             |            |
   ,* Assumptions
+  | ID | Captured On | Description | Mitigation |
+  |----+-------------+-------------+------------|
+  |    |             |             |            |
   ,* Issues
+  | ID | Captured On | Description | Mitigation |
+  |----+-------------+-------------+------------|
+  |    |             |             |            |
   ,* Decisions
+  | ID | Captured On | Description | Mitigation |
+  |----+-------------+-------------+------------|
+  |    |             |             |            |
+  ,* Meetings
+  ,* Tasks
+  ,** TODO Add initial tasks
 #+end_src
 
 ** org-babel
