@@ -67,8 +67,8 @@ As above
   (setq use-file-dialog nil)
   (setq inhibit-startup-screen t)
 
-  (setq-default header-line-format mode-line-format)
-  (setq-default mode-line-format nil)
+  ;(setq-default header-line-format mode-line-format)
+  ;(setq-default mode-line-format nil)
 #+end_src
 
 * Initialise!
@@ -212,13 +212,7 @@ For more information about this package, see https://github.com/noctuid/evil-gui
 #+begin_src emacs-lisp
   (use-package evil
     :delight
-    :init
-    ;(setq evil-want-keybinding nil) ; I prefer the evil-collection
-    ;(setq evil-want-integration t)
     :config
-    ;(add-hook 'evil-mode-hook 'my/modes-that-start-in-emacs-state-hook)
-    ;(define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-    ;(define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
     (evil-mode 1))
 #+end_src
 
@@ -230,16 +224,6 @@ For more information about this package, see https://github.com/noctuid/evil-gui
                     erc-mode 
                     term-mode))
       (add-to-list 'evil-emacs-state-modes mode)))
-#+end_src
-
-*** COMMENT Some other modes should always begin in evil-insert state
-*** COMMENT evil-collection
-For more information about this package, see https://github.com/emacs-evil/evil-collection
-#+begin_src emacs-lisp
-  (use-package evil-collection
-    :delight
-    :after (company evil)
-    :config (evil-collection-init))
 #+end_src
 
 *** COMMENT evil-multiedit
@@ -535,32 +519,6 @@ This is an area that I have underexplored and look forward to unlocking more of 
         ("l" describe-distribution "How to get the latest emacs")
         ("w" describe-no-warranty "Warranty")))))
 #+end_src
-**** COMMENT Get battery status
-My battery status is always on screen. So, I am retiring this code.
-#+begin_src emacs-lisp
-  (with-eval-after-load 'major-mode-hydra
-    (pretty-hydra-define+ my/hydra-leader ()
-      ("Misc"
-       (("b" (battery) "Show battery status")))))
-#+end_src
-
-**** COMMENT Buffers
-I want to be able to bury a buffer quickly.
-
-#+begin_src emacs-lisp
-  (with-eval-after-load 'major-mode-hydra
-
-    (message "Defining hydra - buffer")
-    (defhydra my/hydra-buffer (:color cyan)
-      "Do things with buffers."
-      ("b" bury-buffer "bury"))
-
-    (message "Attaching hydra to leader - shortcuts - buffer")
-    (pretty-hydra-define+ my/hydra-leader ()
-      ("Misc"
-       (("b" (my/hydra-text-scale/body)
-         "Do things with buffers.")))))
-#+end_src
 
 **** emacs-guix
 #+begin_src emacs-lisp
@@ -584,50 +542,31 @@ An inbox for reminders of ideas or meetings that will be processed later on, or 
 Brief annotations on a particular source, there's a link between the source and the note.
 ****** Concept notes
 These are independent notes, they need to be self-explanatory and detailed.
-*** COMMENT Stackable hydras
-I've added basic stack functionality so hydras can be chained. This functionality was copied from the hydra community documentation wiki on github.
-
-#+begin_src emacs-lisp
-  (use-package hydra 
-    :delight
-    :config
-    (setq hydra-lv t)
-    (setq lv-use-separator t)
-
-    (defvar hydra-stack nil)
-    (defun hydra-push (expr)
-      (push `(lambda () ,expr) hydra-stack))
-
-    (defun hydra-pop ()
-      (interactive)
-      (let ((x (pop hydra-stack)))
-        (when x
-          (funcall x)))))
-#+end_src
-
-*** COMMENT Hydra-posframe
-https://github.com/jerrypnz/major-mode-hydra.el/issues/30
-
-#+begin_src emacs-lisp
-  (use-package hydra-posframe ;; NOTE: required hydra and posframe
-    :straight (:type git :host github :repo "jerrypnz/hydra-posframe")
-    :hook (after-init . hydra-posframe-enable))
-#+end_src
 
 ** Hercules - Never need to write another hydra again!
 https://gitlab.com/jjzmajic/hercules.el
+https://github.com/abo-abo/hydra/wiki
 #+begin_src emacs-lisp
   (use-package hercules :after hydra)
 #+end_src
 
-*** Evil window map
+*** COMMENT Evil window map
+#+begin_src emacs-lisp
+  (defhydra my/window-hydra ())
+
+  (general-def :states '(normal motion) "C-w" 'my/window-hydra)
+#+end_src
+
+*** COMMENT Babel map
+Can evil-window-map be more hydra-like
 #+begin_src emacs-lisp
   (hercules-def
-   :keymap 'evil-window-map
-   :toggle-funs #'my/evil-window-map-mode
+   :toggle-funs #'my/org-babel-mode
+   :hide-funs '(org-babel-tangle)
+   :keymap 'org-babel-map
    :transient t)
 
-  (general-def :states '(normal motion) "C-w" 'my/evil-window-map-mode)
+  (define-key org-mode-map (kbd "C-c C-v") #'my/org-babel-mode)
 #+end_src
 
 * Appearance and UI modifications
@@ -640,7 +579,7 @@ Kiss, right?
 I'm not a big fan of noise, but I do like the visible bell
 #+begin_src emacs-lisp
   (setq visible-bell t)
-  (setq ring-bell-function nil) ; I wonder what other people are doing with this setting?
+  (setq ring-bell-function nil)
 #+end_src
 ** Cursor blinking
 I find a blinking cursor can be distracting
@@ -697,43 +636,25 @@ Keyboard scroll one line at a time
 TIP: use describe-face org- if you think something isn't looking its best
 
 #+begin_src emacs-lisp
-  (defun my/org-apply-ui ()
-    (interactive)
-    (with-eval-after-load 'org
-      (org-indent-mode) ; indent text according to outline structure
-      ;(variable-pitch-mode 1) ; UI - use variable pitch fonts
-      (auto-fill-mode 0) ; don't automatically break lines exceeding current-fill-column
-      (visual-line-mode 1) ; instead of breaking lines exceeding current-fill-column, visually wrap them
+    (defun my/org-apply-ui ()
+      (interactive)
+      (with-eval-after-load 'org
+        (org-indent-mode) ; indent text according to outline structure
+        ;(auto-fill-mode 0) ; don't automatically break lines exceeding current-fill-column
+        (visual-line-mode 1) ; instead of breaking lines exceeding current-fill-column, visually wrap them
 
-      (customize-set-variable 'org-ellipsis " ➠")
-      (customize-set-variable 'org-hide-emphasis-markers t)
-      (customize-set-variable 'evil-auto-indent nil)
-      (customize-set-variable 'org-src-window-setup 'current-window
-                              "open org-src blocks in current window")
+        (customize-set-variable 'org-ellipsis " ➠")
+        (customize-set-variable 'org-hide-emphasis-markers t)
+        (customize-set-variable 'evil-auto-indent nil)
+        (customize-set-variable 'org-src-window-setup 'current-window
+                                "open org-src blocks in current window")
 
-  ;;; Replace list hyphen with dot
-      ;; (font-lock-add-keywords 'org-mode
-      ;;                         '(("^ *\\([-]\\) "
-      ;;                            (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) " "))))))
+    ;;; Replace list hyphen with dot
+        ;; (font-lock-add-keywords 'org-mode
+        ;;                         '(("^ *\\([-]\\) "
+        ;;                            (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) " "))))))
 
-  ;;; Ensure code blocks etc use fixed width fonts
-      (progn
-        (set-face-attribute 'org-block nil :inherit 'fixed-pitch)
-        (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
-        (set-face-attribute 'org-indent nil :inherit '(org-hide fixed-pitch))
-        (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-        (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-        (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-        (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
-
-        (set-face-attribute 'org-table nil :weight 'semi-bold :inherit 'fixed-pitch)
-
-        (set-face-attribute 'org-level-1 nil :height 1.75)
-        (set-face-attribute 'org-level-2 nil :height 1.5)
-        (set-face-attribute 'org-level-3 nil :height 1.25)
-        (set-face-attribute 'org-level-4 nil :height 1.1)
-
-        (set-face-attribute 'org-document-title nil :height 4.0))))
+        ))
 #+end_src
 
 *** Bullets
@@ -754,10 +675,10 @@ TIP: use describe-face org- if you think something isn't looking its best
 #+begin_src emacs-lisp
 ;(set-frame-font "Fantasque Sans Mono-14" nil t)
 ;(set-frame-font "Source Code Pro-14" nil t)
-  (defvar my/fixed-pitch-font "Noto Mono")
-  (defvar my/fixed-pitch-height 110)
-  (defvar my/variable-pitch "Cantarell")
-  (defvar my/variable-pitch-height 160)
+  ;(defvar my/fixed-pitch-font "Noto Mono")
+  ;(defvar my/fixed-pitch-height 110)
+  ;(defvar my/variable-pitch "Cantarell")
+  ;(defvar my/variable-pitch-height 160)
 #+end_src
 
 ** Modeline
@@ -1198,7 +1119,7 @@ I'm going to lean towards using org-roam for things like capture templates.
 *** Languages
 I'd like to be able to see results from shell scripts etc. in my org buffers
 #+begin_src emacs-lisp :noweb-ref custom-org-babel :tangle no
-  (org-babel-load-languages
+  (setq org-babel-load-languages
    '(
      ;; (Awk . t)
      ;; (C . t)
@@ -1209,7 +1130,7 @@ I'd like to be able to see results from shell scripts etc. in my org buffers
      ;; (Javascript . t)
      ;; (Lisp . t)
      ;; (Python . t)
-     ;; (PlantUml . t)
+     (plantuml . t)
      ;; (Ruby . t)
      ;; (Scheme . t)
      (shell . t)
@@ -1273,7 +1194,7 @@ The files to be used for the agenda display
 Name of the file in which one's personal diary of dates is kept.
    File to which to add new entries with the ‘i’ key in agenda and calendar.
 #+begin_src emacs-lisp :noweb-ref custom-org-diary :tangle no
-  (org-agenda-diary-file "~/org/diary")
+  ;(org-agenda-diary-file "~/org/diary")
 #+end_src
 *** org-super-agenda
 This does not collect items, it only groups items that are collected by Org Agenda or org-ql
@@ -1339,7 +1260,7 @@ https://github.com/alphapapa/org-super-agenda/blob/master/examples.org
   (use-package org-noter
     :delight)
 #+end_src
-*** Notes
+*** COMMENT Notes
 #+begin_src emacs-lisp :noweb-ref custom-org-notes :tangle no
   (org-agenda-default-notes-file "~/org/notes")
 #+end_src
@@ -1433,18 +1354,6 @@ https://github.com/jkitchin/org-ref
       (setq leetcode-prefer-sql "mysql")
       (setq leetcode-save-solutions t)
       (setq leetcode-directory "~/leetcode"))
-#+end_src
-
-* Window hydra
-Can evil-window-map be more hydra-like
-#+begin_src emacs-lisp
-  (hercules-def
-   :toggle-funs #'my/org-babel-mode
-   :hide-funs '(org-babel-tangle)
-   :keymap 'org-babel-map
-   :transient t)
-
-  (define-key org-mode-map (kbd "C-c C-v") #'my/org-babel-mode)
 #+end_src
 
 * Git / version management / magit
