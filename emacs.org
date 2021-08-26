@@ -74,6 +74,7 @@ As above
 * Initialise!
 #+begin_src emacs-lisp
   (defvar my/org-roam-directory "~/roam/")
+  (defvar my/org-roam-templates-directory "~/roam/Templates/")
   (defvar my/major-mode-key "'")
   (defvar my/leader-key "#")
 #+end_src
@@ -206,6 +207,7 @@ https://github.com/emacscollective/no-littering
 
 * Key bindings (hydra, hercules, key chords, general)
 Use M-x describe-personal-keybindings to see keybindings set by init.el
+https://www.masteringemacs.org/article/mastering-key-bindings-emacs
 ** Evil
 Imitate vi / vim, mainly for movement and because of muscle memory or ergonomics
 For more information about this package, see https://github.com/noctuid/evil-guide
@@ -338,12 +340,28 @@ This is a catch all column.
          (("d" dired "Dired" :color blue)
           ("H" (find-file "~/Projects/home/emacs.org") "emacs.org" :color blue))
          "Roam"
-         (("j" org-roam-dailies-capture-today "Add journal entry" :color blue)
+         (("j" my/hydra-roam-dailies/body "Roam dailies map" :color blue)
           ("J" org-roam-dailies-goto-today "Goto journal" :color blue)
           ("g" org-roam-insert "Insert" :color blue)
           ("g" org-roam-graph "Graph" :color blue)
           ("c" org-roam-capture "Capture" :color blue)
           ("f" org-roam-node-find "Find" :color blue))))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (defhydra my/hydra-roam-dailies (:color blue)
+    "Daily journal"
+    ("n" org-roam-dailies-capture-today "Today" :column "Capture")
+    ("v" org-roam-dailies-capture-date "Date" :column "Capture")
+    ("d" org-roam-dailies-goto-today "Today" :column "Goto" :color pink)
+    ("f" org-roam-dailies-goto-next-note "Next note" :column "Goto" :color pink)
+    ("b" org-roam-dailies-goto-previous-note "Previous note" :column "Goto" :color pink)
+    ("t" org-roam-dailies-goto-tomorrow "Tomorrow" :column "Goto" :color pink)
+    ("y" org-roam-dailies-goto-yesterday "Yesterday" :column "Goto" :color pink)
+    ("." org-roam-dailies-find-directory "Dailies dir" :column "Goto")
+    ("c" org-roam-dailies-goto-date "Date" :column "Goto")
+  )
+
 #+end_src
 
 **** UI
@@ -968,6 +986,26 @@ https://github.com/minad/marginalia
   (marginalia-mode))
 #+end_src
 
+* Help enhancements
+  Requires the emacswiki.org git repo to be checked out.
+
+  git clone git://github.com/emacsmirror/emacswiki.org.git emacswiki
+  git checkout -b master origin/master
+
+** help-macro+
+#+begin_src emacs-lisp
+  (use-package help-macro+ :straight (:type git :host github :repo "emacsmirror/help-macro-plus"))
+#+end_src
+
+** help-fns+
+#+begin_src emacs-lisp
+  (use-package help-fns+ :straight (:type git :host github :repo "emacsmirror/help-fns-plus"))
+#+end_src
+
+** help-find
+#+begin_src emacs-lisp
+  (use-package help-find :straight (:type git :host github :repo "emacsmirror/help-find"))
+#+end_src
 * Org-mode
 #+begin_src emacs-lisp
     (with-eval-after-load 'all-the-icons
@@ -1014,18 +1052,15 @@ https://github.com/minad/marginalia
 #+end_src
 *** Org capture templates
 #+begin_src emacs-lisp
-   (setq org-capture-templates
-         '(("r" "Risk" table-line (file+headline (lambda () (buffer-file-name)) "Risks")
-            "|id|%u|%?||")
-           ("a" "Assumption" table-line (file+headline (lambda () (buffer-file-name)) "Assumptions")
-            "")
-           ("i" "Issue" table-line (file+headline (lambda () (buffer-file-name)) "Issues")
-            "")
-           ("d" "Decision" table-line (file+headline (lambda () (buffer-file-name)) "Decisions")
-            "")
-           ("t" "Task" entry (file+headline (lambda () (buffer-file-name)) "Tasks")
-            "** TODO %^{Description}%?\n:LOGBOOK:\n- Added: %U\n:END:")
-           ))
+  (setq org-capture-templates
+        '(("r" "Risk" table-line (file+headline (lambda () (buffer-file-name)) "Risks") "|id|%u|%?||")
+          ("a" "Assumption" table-line (file+headline (lambda () (buffer-file-name)) "Assumptions") "")
+          ("i" "Issue" table-line (file+headline (lambda () (buffer-file-name)) "Issues") "")
+          ("d" "Decision" table-line (file+headline (lambda () (buffer-file-name)) "Decisions") "")
+          ("t" "Task" entry (file+headline (lambda () (buffer-file-name)) "Tasks") "** TODO %^{Description}%?\n:LOGBOOK:\n- Added: %U\n:END:")
+          ("m" "Meeting" entry (file+headline (lambda () (buffer-file-name)) "Meeting")
+           "")
+          ))
 
 #+end_src
 ** org-roam
@@ -1064,8 +1099,11 @@ I'm going to lean towards using org-roam for things like capture templates.
        "* Characteristics\n\n- Family: %?\n- Inspired by: \n\n* Reference:\n\n"
        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}") :unnarrowed t)
       ("p" "Project" plain
-       "*Description\n\n* Timeline\n\n* Tasks\n* TODO Add initial tasks\n\n* Meetings\n\n* Risks\n\n* Assumptions\n\n* Issues\n\n* Decisions\n\n"
-       :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: Project: ${title}\n#+filetags: Project") :unnarrowed t)
+       (file "~/roam/Templates/Project.org")
+       :if-new (file+head "%<%y%m%d%h%m%s>-${slug}.org" "#+title: project: ${title}\n#+filetags: project") :unnarrowed t)
+      ("m" "Meeting" plain
+       (file "~/roam/Templates/Meeting.org")
+       :if-new (file+head "%<%y%m%d%h%m%s>-${slug}.org" "#+title: project: ${title}\n#+filetags: project") :unnarrowed t)
       ))
 #+end_src
 
@@ -1073,19 +1111,15 @@ I'm going to lean towards using org-roam for things like capture templates.
   (setq org-roam-dailies-capture-templates
         '(("d" "default" entry
            "* %?"
-           :if-new (file+head "%<%Y-%m-%d>.org"
-                              "#+title: %<%Y-%m-%d>"))))
+           :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d>"))))
 #+end_src
 
 **** Projects
-  ("p" "Project" plain
-   "*Description\n\n* Timeline\n\n* Tasks\n* TODO Add initial tasks\n\n* Meetings\n\n* Risks\n\n* Assumptions\n\n* Issues\n\n* Decisions\n\n"
-   :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: Project: ${title}\n#+filetags: Project") :unnarrowed t)
-
-   Projects make use of :DEADLINE and :SCHEDULED: properties, they are captured in the timeline in a column view.
+Projects make use of :DEADLINE and :SCHEDULED: properties, they are captured in the timeline in a column view.
 
 #+begin_src org :tangle ~/roam/Templates/Project.org
   ,* Description
+  ,* Project goals
   ,* Timeline
   Elements with :SCHEDULED: or :DEADLINE: properties are gathered here.
   ,#+BEGIN: columnview :hlines 1 :id "label" :match "TODO,DEADLINE,SCHEDULED"
@@ -1108,7 +1142,13 @@ I'm going to lean towards using org-roam for things like capture templates.
   |    |             |             |            |
   ,* Meetings
   ,* Tasks
-  ,** TODO Add initial tasks
+#+end_src
+
+**** Project meeting
+#+begin_src org :tangle ~/roam/Templates/Meeting.org
+  ,* Attendees
+  ,* Actions
+  ,* Notes
 #+end_src
 
 ** org-babel
