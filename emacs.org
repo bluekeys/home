@@ -1547,16 +1547,17 @@ https://www.leonrische.me/fc/index.html
                :type git
                :repo "https://git.sr.ht/~l3kn/org-fc"
                :files (:defaults "awk" "demo.org"))
+
     :init
-    ;(setq org-fc-directories '("/my-org-files/"))
     (setq org-fc-directories `(,my/org-roam-directory))
     (setq org-fc-review-history-file "~/flashcard-review-history.tsv")
+
     :config
     (require 'org-fc-hydra)
     (require 'org-fc-keymap-hint)
+
     (pretty-hydra-define+ my/hydra-leader ()
-      ("Misc"
-       (("F" org-fc-hydra/body "Flashcards" :color blue))))
+      ("Misc" (("F" org-fc-hydra/body "Flashcards" :color blue))))
 
     (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
       (kbd "RET") 'org-fc-review-flip
