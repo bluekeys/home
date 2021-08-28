@@ -2,10 +2,6 @@
 #+PROPERTY: header-args            :noweb no-export :comments both :results silent :mkdirp no 
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el 
 
-#+BEGIN: org-ql :query "todo: priority:A,B" :columns (todo (priority "P") ((property "agenda-group") "Group") deadline heading) :sort (deadline priority) :take 7 :ts-format "%Y-%m-%d %H:%M"
-
-#+END:
-
 * Lots and lots of ideas were taken from elsewhere.
 https://github.com/raxod502/radian
 https://countvajhula.com/2020/12/27/turn-your-emacs-d-into-an-emacs-distribution-with-straight-el/
@@ -73,8 +69,9 @@ As above
 
 * Initialise!
 #+begin_src emacs-lisp
-  (defvar my/org-roam-directory "~/roam/")
-  (defvar my/org-roam-templates-directory "~/roam/Templates/")
+  (defvar my/org-roam-directory "~/roam")
+  (defvar my/org-roam-dailies-directory "~/roam/daily")
+  (defvar my/org-roam-templates-directory "~/roam/Templates")
   (defvar my/major-mode-key "'")
   (defvar my/leader-key "#")
 #+end_src
@@ -228,44 +225,28 @@ For more information about this package, see https://github.com/noctuid/evil-gui
       (add-to-list 'evil-emacs-state-modes mode)))
 #+end_src
 
-*** COMMENT evil-multiedit
+*** evil-multiedit
 For more information about this package, see https://github.com/hlissner/evil-multiedit
 #+begin_src emacs-lisp
-  (use-package evil-multiedit
-    :delight
-    :after (evil)
-    :config (evil-multiedit-default-keybinds))
+  (use-package evil-multiedit :delight :after (evil) :config (evil-multiedit-default-keybinds))
 #+end_src
+**** TODO FIXME Warning (iedit): Iedit default key "C-;" is occupied by embark-dwim.
 
-*** COMMENT undo-tree
+*** undo-tree
 For more information about this package, see https://elpa.gnu.org/packages/undo-tree.html
 #+begin_src emacs-lisp
-  (use-package undo-tree
-    :delight
-    :after (evil))
+  (use-package undo-tree :delight :after (evil))
 #+end_src
 
-*** COMMENT evil-cleverparens
+*** evil-cleverparens
 Paredit with evil awareness for more than just lisp
 #+begin_src emacs-lisp
-  (use-package evil-cleverparens
-    :after (evil))
+  (use-package evil-cleverparens :after (evil))
 #+end_src
 
-*** COMMENT Get ESC to behave consistently
+*** Get ESC to behave consistently
 #+begin_src emacs-lisp
   (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
-#+end_src
-
-*** COMMENT Evil org mode
-Error (use-package): evil-org/:config: Cannot open load file: No such file or directory, evil-org-agenda
-#+begin_src emacs-lisp
-  ;; (use-package evil-org
-  ;;   :after org
-  ;;   :hook (org-mode . (lambda () evil-org-mode))
-  ;;   :config
-  ;;   (require 'evil-org-agenda)
-  ;;   (evil-org-agenda-set-keys))
 #+end_src
 
 ** General - For single key presses
@@ -1075,7 +1056,9 @@ Installation
     :init
     (setq org-roam-v2-ack t)
 
-    :hook (after-init . org-roam-mode)
+    :hook
+    (after-init . org-roam-mode)
+
     :config
     (org-roam-setup))
 #+end_src
@@ -1227,26 +1210,28 @@ When I'm running those blocks, I'd like the option for them to run async
 
   (define-key org-mode-map (kbd "C-c C-v") #'org-babel-mode)
 #+end_src
-** COMMENT Agenda / Super Agenda
+** Agenda / Super Agenda
 *** These are the files that are used to build the agenda
 https://orgmode.org/manual/Agenda-Files.html#Agenda-Files
 The files to be used for the agenda display
 #+begin_src emacs-lisp :noweb-ref org-agenda-files
   (setq org-agenda-files
         (append 
-         '("~/org/agenda")
          `(,my/org-roam-directory)
          `(,my/org-roam-dailies-directory)
-         (file-expand-wildcards "~/Projects/*/*.org") ;FIXME, projects will differ on other boxes, link this to projectile instead of hard-coding
-         (file-expand-wildcards "~/*/*.org")))
+                                          ;'("~/org/agenda")
+                                          ;(file-expand-wildcards "~/Projects/*/*.org")
+                                          ;FIXME, projects will differ on other boxes, link this to projectile instead of hard-coding
+                                          ;(file-expand-wildcards "~/*/*.org")
+         ))
 #+end_src
-*** Diary file
+*** COMMENT Diary file
 Name of the file in which one's personal diary of dates is kept.
    File to which to add new entries with the ‘i’ key in agenda and calendar.
 #+begin_src emacs-lisp :noweb-ref custom-org-diary :tangle no
   ;(org-agenda-diary-file "~/org/diary")
 #+end_src
-*** org-super-agenda
+*** COMMENT org-super-agenda
 This does not collect items, it only groups items that are collected by Org Agenda or org-ql
 https://github.com/alphapapa/org-super-agenda
 https://github.com/alphapapa/org-super-agenda/blob/master/examples.org
@@ -1574,7 +1559,7 @@ https://www.leonrische.me/fc/index.html
       (kbd "q") 'org-fc-review-quit))
 #+end_src
 
-* COMMENT Dashboard
+* Dashboard
 https://github.com/emacs-dashboard/emacs-dashboard 
 
 This is the first thing I see when I switch on my laptop. I would like it to be very focussed.
@@ -1588,12 +1573,14 @@ Ideally, I would see a welcome message, goals according to priority
 - [ ] Upcoming appointments
 - [ ] Maybe emacs packages loaded in x time message
 - [ ] Maybe links to my site or github
+
 ** Inhibit the standard emacs startup screen
 This will show Dashboard in frames created with emacsclient -c
 
 #+begin_src emacs-lisp
   (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
 #+end_src
+
 ** Configure the dashboard
 #+begin_src emacs-lisp
   (use-package dashboard
@@ -1618,14 +1605,13 @@ This will show Dashboard in frames created with emacsclient -c
   (defun my/dashboard-switch ()
     "Switch to dashboard and refresh content"
     (interactive)
-    (persp-switch-to-buffer "*dashboard*")
+    (switch-to-buffer "*dashboard*")
     (dashboard-refresh-buffer))
 
   (with-eval-after-load 'general
     (pretty-hydra-define+ my/hydra-leader ()
       ("Dashboard"
-       (("D" (my/dashboard-switch)
-         "Goto *dashboard*")))))
+       (("D" (my/dashboard-switch) "Goto *dashboard*")))))
 #+end_src
 ** Create a dashboard widget that shows un-filed captures
 #+begin_src emacs-lisp
@@ -1665,129 +1651,6 @@ Helpful is an alternative to the built-in Emacs help that provides much more con
     :config
     (setq which-key-idle-delay 0)
     (which-key-mode))
-#+end_src
-* COMMENT Completion functionality
-https://writequit.org/denver-emacs/presentations/2017-04-11-ivy.html
-https://company-mode.github.io
-** Company
-Modular in-buffer completion framework. Provides a generic front end for completion engines, with pretty and automatic completion lists.
-#+begin_src emacs-lisp
-  (use-package company
-    :config (global-company-mode))
-#+end_src
-
-*** Company-box
-A company front-end with icons
-https://github.com/sebastiencs/company-box
-#+begin_src emacs-lisp
-  (use-package company-box 
-    :hook (company-mode . company-box-mode))
-#+end_src
-
-*** COMMENT Company-posframe
-https://github.com/tumashu/company-posframe
-#+begin_src emacs-lisp
-  (use-package company-posframe
-    :hook (company-mode . company-posframe-mode) 
-    :config (company-posframe-mode 1))
-#+end_src
-** Ivy, a generic completion mechanism for Emacs.
-Ivy is for quick and easy selection from a list.
-#+begin_src emacs-lisp
-  (use-package ivy
-    :delight
-    :bind (("C-s" . swiper)
-           :map ivy-minibuffer-map
-           ("TAB" . ivy-alt-done)
-           ("C-j" . ivy-next-line)
-           ("C-k" . ivy-previous-line)
-           ("C-l" . ivy-alt-done)
-           :map ivy-switch-buffer-map
-           ("C-d" . ivy-switch-buffer-kill)
-           ("C-k" . ivy-previous-line)
-           ("C-l" . ivy-done)
-           :map ivy-reverse-i-search-map
-           ("C-d" . ivy-reverse-i-search-kill)
-           ("C-k" . ivy-previous-line))
-    :custom
-    (ivy-use-virtual-buffers t) ; is this interfering with perspective https://github.com/nex3/perspective-el/issues/10
-    (ivy-count-format "(%d/%d) ")
-    (ivy-height 25)
-    :config
-    (ivy-mode 1))
-#+end_src
-
-*** COMMENT Ivy-Posframe
-https://github.com/tumashu/ivy-posframe
-#+begin_src emacs-lisp
-  (use-package ivy-posframe
-    :config
-    (setq ivy-posframe-height-alist '((swiper . 10)
-                                      (t . 20)))
-    (setq ivy-posframe-parameters '((left-fringe . 1)
-                                    (right-fringe . 1)))
-    (setq ivy-posframe-display-functions-alist
-          '((swiper . ivy-posframe-display-at-point)
-            (complete-symbol . ivy-posframe-display-at-point)
-            (counsel-M-x . ivy-posframe-display-at-frame-center)
-            (t . ivy-posframe-display)))
-    (ivy-posframe-mode 1))
-#+end_src
-
-*** Ivy-Rich
-https://github.com/Yevgnen/ivy-rich
-- all-the-icons-ivy-rich-mode depends on ivy-rich and respects ivy-rich-mode.
-- To display icons correctly, you should run M-x all-the-icons-install-fonts to install the necessary fonts.
-- For better performance, enable all-the-icons-ivy-rich-mode before ivy-rich-mode .
-- Enable other packages like counsel-projectile before enabling all-the-icons-ivy-rich-mode.
-#+begin_src emacs-lisp
-  (use-package all-the-icons-ivy-rich
-    :delight
-    :after (ivy all-the-icons counsel-projectile)
-    :config 
-    ;; Slow Rendering
-    ;; If you experience a slow down in performance when rendering multiple icons simultaneously,
-    ;; you can try setting the following variable
-    (setq inhibit-compacting-font-caches t) ; May enlarge emacs memory footprint
-    (all-the-icons-ivy-rich-mode 1))
-
-  (use-package ivy-rich
-    :delight
-    :after (all-the-icons-ivy-rich)
-    :hook (ivy-mode . ivy-rich-mode)
-    :custom
-    (ivy-rich-modify-columns
-     'ivy-switch-buffer
-     '((ivy-rich-switch-buffer-size (:align right))
-       (ivy-rich-switch-buffer-major-mode (:width 20 :face error)))))
-#+end_src
-** Counsel, a collection of Ivy-enhanced versions of common Emacs commands.
-https://oremacs.com/2015/04/09/counsel-completion/
-Counsel lives in the same repository as swiper and uses ivy too
-Counsel provides some useful commands that work with ivy
-- Complete Elisp at point with counsel-el.
-- Complete Clojure at point with counsel-clj.
-- Open a git-managed file with counsel-git.
-- Describe an Elisp variable with counsel-describe-variable.
-- Describe an Elisp function with counsel-describe-function.
-- Look up an Elisp symbol in the info with counsel-info-lookup-symbol.
-- Insert a Unicode character at point with counsel-unicode-char.
-#+begin_src emacs-lisp 
-  (use-package counsel
-    :demand t
-    :delight
-    :hook (after-init . counsel-mode)
-    :config (counsel-mode 1)
-    :bind (;("C-h f" . counsel-describe-function)
-           ;("C-h l" . counsel-find-library)
-           ;("C-h u" . counsel-unicode-char)
-           ;("C-h v" . counsel-describe-variable)
-           ;("C-h s" . counsel-info-lookup-symbol) ; These now need adding to the helpful hydra
-           ("M-x" . counsel-M-x)
-           ("C-x C-f" . counsel-find-file)
-           ("M-J" . counsel-switch-buffer)
-           ("s-`" . counsel-linux-app)
-           :map minibuffer-local-map ("C-r" . counsel-minibuffer-history)))
 #+end_src
 * COMMENT Search
 ** Buffers -> Swiper, any ivy enhanced alternative to isearch
