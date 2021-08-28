@@ -1608,8 +1608,7 @@ Ideally, I would see a welcome message, goals according to priority
 
   (with-eval-after-load 'general
     (pretty-hydra-define+ my/hydra-leader ()
-      ("Dashboard"
-       (("D" (my/dashboard-switch) "Goto *dashboard*")))))
+      ("Dashboard" (("D" (my/dashboard-switch) "Goto *dashboard*")))))
 #+end_src
 ** Create a dashboard widget that shows un-filed captures
 #+begin_src emacs-lisp
