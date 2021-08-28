@@ -314,19 +314,20 @@ This is a catch all column.
   (with-eval-after-load 'hydra
     (with-eval-after-load 'major-mode-hydra
       (message "Adding a shortcut column to my leader hydra")
-      (pretty-hydra-define+ my/hydra-leader ()
-        ("Tools"
+      (pretty-hydra-define+ my/hydra-leader (:color blue)
+        ("Dashboard"
+         ()
+         "Tools"
          ()
          "Misc"
-         (("d" dired "Dired" :color blue)
-          ("H" (find-file "~/Projects/home/emacs.org") "emacs.org" :color blue))
-         "Roam"
-         (("j" my/hydra-roam-dailies/body "Roam dailies map" :color blue)
-          ("J" org-roam-dailies-goto-today "Goto journal" :color blue)
-          ("g" org-roam-insert "Insert" :color blue)
-          ("g" org-roam-graph "Graph" :color blue)
-          ("c" org-roam-capture "Capture" :color blue)
-          ("f" org-roam-node-find "Find" :color blue))))))
+         (("d" dired "Dired")
+          ("H" (find-file "~/Projects/home/emacs.org") "emacs.org"))
+         "Agenda / Journal"
+         (("j" my/hydra-roam-dailies/body "Journal")
+          ("g" org-roam-insert "Insert")
+          ("g" org-roam-graph "Graph")
+          ("c" org-roam-capture "Capture")
+          ("f" org-roam-node-find "Find"))))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -989,47 +990,47 @@ https://github.com/minad/marginalia
 #+end_src
 * Org-mode
 #+begin_src emacs-lisp
-    (with-eval-after-load 'all-the-icons
-      (with-eval-after-load 'major-mode-hydra
-        (use-package org
-          :delight
-          :straight (:type built-in)
-          :preface
-          (defun my/org-mode-setup ()
-            (my/org-apply-ui)
-            <<org-agenda-files>>
-            <<org-refile-targets>>
-            )
-          :hook ((org-mode . my/org-mode-setup))
-          :mode-hydra 
-          (org-mode
-           ("Clock"
-            (("t" org-timer-start)
-             ("s" org-timer-stop)
-             ;; Need to be at timer
-             ("r" org-timer-set-timer)
-             ;; Print timer value to buffer
-             ("p" org-timer)
-             ("w" (org-clock-in '(4)))
-             ("o" org-clock-out)
-             ;; Visit the clocked task from any buffer
-             ("j" org-clock-goto)
-             ("c" org-capture)
-             ("l" org-capture-goto-last-stored))
-           "Move"
-            (("h" org-previous-visible-heading :color red)
-             ("j" org-forward-element :color red)
-             ("k" org-backward-element :color red)
-             ("l" org-next-visible-heading :color red))))
-          :config
-          (setq org-log-into-drawer t)
-          (require 'ox-org)
-          :custom
-          (org-catch-invisible-edits 'smart)
-          <<custom-org-babel>>
-          <<custom-org-diary>>
-          <<custom-org-notes>>
-          )))
+  (use-package org
+    :delight
+    :straight (:type built-in)
+    :after (all-the-icons major-mode-hydra)
+    :config
+    (setq org-log-into-drawer t)
+    (require 'ox-org)
+    (require 'org-habit)
+    :custom
+    (org-catch-invisible-edits 'smart)
+    <<custom-org-babel>>
+    <<custom-org-diary>>
+    <<custom-org-notes>>
+    :preface
+    (defun my/org-mode-setup ()
+      (my/org-apply-ui)
+      <<org-agenda-files>>
+      <<org-refile-targets>>
+      )
+    :hook ((org-mode . my/org-mode-setup))
+    :mode-hydra 
+    (org-mode
+     ("Clock"
+      (("t" org-timer-start)
+       ("s" org-timer-stop)
+       ;; Need to be at timer
+       ("r" org-timer-set-timer)
+       ;; Print timer value to buffer
+       ("p" org-timer)
+       ("w" (org-clock-in '(4)))
+       ("o" org-clock-out)
+       ;; Visit the clocked task from any buffer
+       ("j" org-clock-goto)
+       ("c" org-capture)
+       ("l" org-capture-goto-last-stored))
+      "Move"
+      (("h" org-previous-visible-heading :color red)
+       ("j" org-forward-element :color red)
+       ("k" org-backward-element :color red)
+       ("l" org-next-visible-heading :color red))))
+    )
 #+end_src
 *** Org capture templates
 #+begin_src emacs-lisp
@@ -1574,8 +1575,7 @@ Ideally, I would see a welcome message, goals according to priority
 - [ ] Maybe emacs packages loaded in x time message
 - [ ] Maybe links to my site or github
 
-** Inhibit the standard emacs startup screen
-This will show Dashboard in frames created with emacsclient -c
+** This will show Dashboard in frames created with emacsclient -c
 
 #+begin_src emacs-lisp
   (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
@@ -1588,9 +1588,7 @@ This will show Dashboard in frames created with emacsclient -c
     :custom (dashboard-page-separator "\n\n\n")
     :config
     (dashboard-setup-startup-hook)
-    (setq dashboard-items '((agenda . 10)
-                            (recents . 10)
-                            (registers . 10)))
+    (setq dashboard-items '((agenda . 10)))
     (setq dashboard-set-init-info t)
     (setq dashboard-week-agenda t)
     (setq dashboard-org-agenda-categories '("Tasks" "Appointments"))
