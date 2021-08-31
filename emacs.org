@@ -2,13 +2,6 @@
 #+PROPERTY: header-args            :noweb no-export :comments both :results silent :mkdirp no 
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el 
 
-* Lots and lots of ideas were taken from elsewhere.
-https://github.com/raxod502/radian
-https://countvajhula.com/2020/12/27/turn-your-emacs-d-into-an-emacs-distribution-with-straight-el/
-https://en.liujiacai.net/2021/05/21/emacs-package/
-http://vimdoc.sourceforge.net/htmldoc/vimindex.html#g
-https://wikemacs.org/wiki/Discoverability#Hercules.2C_joining_which-key-mode_and_Hydras
-http://trey-jackson.blogspot.com/2010/04/emacs-tip-36-abort-minibuffer-when.html
 * A explanation of how it all works
 Distraction-free, goal-driven, task-oriented.
 I would like to see that work is driven by org mode.
@@ -62,9 +55,6 @@ As above
   (setq use-dialog-box nil)
   (setq use-file-dialog nil)
   (setq inhibit-startup-screen t)
-
-  ;(setq-default header-line-format mode-line-format)
-  ;(setq-default mode-line-format nil)
 #+end_src
 
 * Initialise!
@@ -570,6 +560,7 @@ Can evil-window-map be more hydra-like
 #+end_src
 
 * Appearance and UI modifications
+** 
 ** yes/no => y/n
 Kiss, right?
 #+begin_src emacs-lisp
@@ -673,12 +664,21 @@ TIP: use describe-face org- if you think something isn't looking its best
 #+end_src
 ** Fonts
 #+begin_src emacs-lisp
-;(set-frame-font "Fantasque Sans Mono-14" nil t)
-;(set-frame-font "Source Code Pro-14" nil t)
-  ;(defvar my/fixed-pitch-font "Noto Mono")
-  ;(defvar my/fixed-pitch-height 110)
-  ;(defvar my/variable-pitch "Cantarell")
-  ;(defvar my/variable-pitch-height 160)
+  ;(set-frame-font "Fantasque Sans Mono-14" nil t)
+  ;(set-frame-font "Source Code Pro-14" nil t)
+    ;(defvar my/fixed-pitch-font "Noto Mono")
+    ;(defvar my/fixed-pitch-height 110)
+    ;(defvar my/variable-pitch "Cantarell")
+    ;(defvar my/variable-pitch-height 160)
+
+  ;; Main typeface
+  (set-face-attribute 'default nil :family "DejaVu Sans Mono" :height 110)
+
+  ;; Proportionately spaced typeface
+  (set-face-attribute 'variable-pitch nil :family "DejaVu Serif" :height 1.0)
+
+  ;; Monospaced typeface
+  (set-face-attribute 'fixed-pitch nil :family "DejaVu Sans Mono" :height 1.0)
 #+end_src
 
 ** Modeline
@@ -698,8 +698,14 @@ TIP: use describe-face org- if you think something isn't looking its best
 #+end_src
 *** Move modeline to the top
 #+begin_src emacs-lisp
-  ;(setq-default header-line-format mode-line-format)
+  (setq-default header-line-format mode-line-format)
   ;(setq-default mode-line-format nil)
+  ;(setq-default header-line-format mode-line-format)
+#+end_src
+** Highlight
+#+begin_src emacs-lisp
+(hl-line-mode)
+(show-paren-mode)
 #+end_src
 ** Theme
 *** Theme loading functions
@@ -798,7 +804,7 @@ https://protesilaos.com/modus-themes/
           modus-themes-italic-constructs t
           modus-themes-links '(neutral-underline faint background)
           modus-themes-prompts '(intense background gray)
-          modus-themes-mode-line '(moody borderless accented)
+          modus-themes-mode-line '(3d accented)
           face-near-same-color-threshold 70000
           x-underline-at-descent-line t
           modus-themes-completions 'opinionated
@@ -829,24 +835,12 @@ https://protesilaos.com/modus-themes/
           modus-themes-scale-title 1.3
           )
 
-    ;; Main typeface
-    (set-face-attribute 'default nil :family "DejaVu Sans Mono" :height 110)
-
-    ;; Proportionately spaced typeface
-    (set-face-attribute 'variable-pitch nil :family "DejaVu Serif" :height 1.0)
-
-    ;; Monospaced typeface
-    (set-face-attribute 'fixed-pitch nil :family "DejaVu Sans Mono" :height 1.0)
-
     ;; Load the theme files before enabling a theme
     (modus-themes-load-themes)
     :config
     ;; Load the theme of your choice:
     (modus-themes-load-operandi) ;; OR (modus-themes-load-vivendi)
-    (hl-line-mode)
-    (show-paren-mode)
 
-  (setq-default header-line-format mode-line-format)
     :bind ("<f5>" . modus-themes-toggle))
 #+end_src
 
@@ -884,6 +878,8 @@ https://github.com/raxod502/selectrum/wiki/Additional-Configuration#display-mini
     (setq x-gtk-resize-child-frames 'resize-mode)
     (mini-frame-mode +1))
 #+end_src
+
+* 
 
 * Behaviour
 
@@ -1576,11 +1572,9 @@ Ideally, I would see a welcome message, goals according to priority
 - [ ] Maybe links to my site or github
 
 ** This will show Dashboard in frames created with emacsclient -c
-
 #+begin_src emacs-lisp
   (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
 #+end_src
-
 ** Configure the dashboard
 #+begin_src emacs-lisp
   (use-package dashboard
@@ -1596,7 +1590,38 @@ Ideally, I would see a welcome message, goals according to priority
     (setq dashboard-set-heading-icons t)
     (setq dashboard-agenda-release-buffers t)
     (setq dashboard-set-file-icons t)
-    (setq dashboard-set-footer nil))
+    (setq dashboard-set-footer nil)
+    (setq dashboard-startup-banner "~/Downloads/8afe1c4eaca4ed80b7123771b1c7e84f.png")
+
+    ; Code to pick a random motivational startup message from a selection stored in an org-file.
+    (defcustom dashboard-banner-logo-titles
+      '(
+        "Woooohoooo"
+        "Welcome to the jungle!"
+        "Emacs Rocks!"
+        )
+      "A list of messages, one of which dashboard chooses to display as the logo subtitle."
+      :type 'list
+      :group 'dashboard)
+
+    (setq dashboard-banner-logo-title (nth (random (1- (1+ (length dashboard-banner-logo-titles)))) dashboard-banner-logo-titles))
+
+    ;(org-roam-db-query [:select * :from nodes :where (= id "75aeefb8-8ac8-430f-b136-77c44934afad")])
+
+    ;; (("75aeefb8-8ac8-430f-b136-77c44934afad"
+    ;;   "/home/user/roam/20210828155526-motivational_quotes.org"
+    ;;   0 1 nil nil nil nil
+    ;;   "Motivational Quotes" (
+    ;; 			   ("CATEGORY" . "20210828155526-motivational_quotes")
+    ;; 			   ("ID" . "75aeefb8-8ac8-430f-b136-77c44934afad")
+    ;; 			   ("BLOCKED" . "")
+    ;; 			   ("FILE" . "/home/user/roam/20210828155526-motivational_quotes.org")
+    ;; 			   ("PRIORITY" . "B")
+    ;; 			   )
+    ;;   nil))
+
+    )
+
 #+end_src
 ** Create a shortcut function to switch to the dashboard
 #+begin_src emacs-lisp
@@ -1610,7 +1635,7 @@ Ideally, I would see a welcome message, goals according to priority
     (pretty-hydra-define+ my/hydra-leader ()
       ("Dashboard" (("D" (my/dashboard-switch) "Goto *dashboard*")))))
 #+end_src
-** Create a dashboard widget that shows un-filed captures
+** COMMENT Create a dashboard widget that shows un-filed captures
 #+begin_src emacs-lisp
   (defun my/dashboard-insert-unfiled-org-captures (list-size)
     (insert "Un-filed captures"))
@@ -1998,3 +2023,11 @@ You can get a list of loaded packages that depend on cl by calling the following
   (require 'loadhist)
   (file-dependents (feature-file 'cl))
 #+end_src
+
+* Credits
+https://github.com/raxod502/radian
+https://countvajhula.com/2020/12/27/turn-your-emacs-d-into-an-emacs-distribution-with-straight-el/
+https://en.liujiacai.net/2021/05/21/emacs-package/
+http://vimdoc.sourceforge.net/htmldoc/vimindex.html#g
+https://wikemacs.org/wiki/Discoverability#Hercules.2C_joining_which-key-mode_and_Hydras
+http://trey-jackson.blogspot.com/2010/04/emacs-tip-36-abort-minibuffer-when.html
