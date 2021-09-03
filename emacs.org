@@ -19,10 +19,27 @@ E.g. I have an idea, I want to ensure that posframes are used for all hydras. I 
 I should record the ideas, using org-capture. I should then refile those ideas into the relevant areas of the config.
 
 To aid debugging, each top level headline is configured to tangle into a distinct lisp file. Those files can then be loaded (or not) from init.el.
+** Notes
+*** Quick Capture
+An inbox for reminders of ideas or meetings that will be processed later on, or trashed.
+
+| Add a note to a file           | org-roam-find-file        |
+| Force db cache refresh         | org-roam-db-rebuild-cache |
+| Link to another org document   | org-roam-insert           |
+| Show backlinks to current note | org-roam                  |
+| Visualize links                |                           |
+| Add tag                        |                           |
+| Add title                      |                           |
+*** Permanent Notes 
+**** Literature notes
+Brief annotations on a particular source, there's a link between the source and the note.
+**** Concept notes
+These are independent notes, they need to be self-explanatory and detailed.
 
 * Early init
+** Recommended by straight.el to prevent package.el loading packages prior to their init-file loading
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
-  (setq package-enable-at-startup nil) ;; Recommended by straight.el to prevent package.el loading packages prior to their init-file loading
+  (setq package-enable-at-startup nil) 
 #+end_src
 ** Free as much screen real-estate as possible
 It's fine, the tooltip can stay, it'll display in the echo area.
@@ -105,13 +122,6 @@ https://github.com/raxod502/straight.el
 You must install git to use straight.el
 You must remove any code that relates to package.el, therefore you must remove any use-package :ensure / use-package-always-ensure
 
-** Stop package.el
-Prevent package.el from modifying this file, because straight.el is doing the work.
-
-#+begin_src emacs-lisp
-  (setq package-enable-at-startup nil)
-#+end_src
-
 ** Variables that need setting before bootstrap
 Because I modify all my repos in emacs anyways and they're stored in ~/.emacs.d/straight/repos, I can probably get away with only checking for modifications on save.
 
@@ -121,17 +131,12 @@ Because I modify all my repos in emacs anyways and they're stored in ~/.emacs.d/
       (setq straight-check-for-modifications '(check-on-save)))
 #+end_src
 
-Configure use-package to prefer straight, which allows me to get rid of the abundance of :straight t's that were littering my config.
-
-#+begin_src emacs-lisp
-  (setq straight-use-package-by-default t)
-#+end_src
-
 Setting the variable straight-cache-autoloads causes the autoloads of all used packages to be cached in a single file.
 You may wish to call straight-prune-build occasionally otherwise the file may grow large over time.
 
 #+begin_src emacs-lisp
   (setq straight-cache-autoloads t)
+  (setq straight-use-package-by-default t)
 #+end_src
 
 Straight reports process output to its buffer, I'm normally just not interested, so I add a space to the beginning of its name to hide it from view.
@@ -158,7 +163,7 @@ This is taken verbatim from the site.
     (load bootstrap-file nil 'nomessage))
 #+end_src
 
-** use-package - Declarative package configuration and loading
+* use-package - Declarative package configuration and loading
 use-package loads features, not packages. Features can be tested for using featurep.
 
 Use the :init keyword to execute code before a package is loaded.
@@ -175,7 +180,8 @@ https://emacs.stackexchange.com/questions/61276/why-does-use-package-considers-e
   (straight-use-package 'use-package)
 #+end_src
 
-* restart-emacs - Make restarting emacs just work!
+* restart-emacs
+- Make restarting emacs just work!
 This is a simple, convenience wrapper around functions to restart emacs. In a terminal, on windows, wherever, this package has us covered.
 
 #+begin_src emacs-lisp
@@ -284,7 +290,7 @@ As I use use-package, I can use the :mode-hydra keyword to create major mode hyd
   (use-package major-mode-hydra
     :demand t ; without this, :major-mode won't reliably work for use-package definitions
     :custom
-    (major-mode-hydra-invisible-quit-key "SPC") 
+    (major-mode-hydra-invisible-quit-key 'my/major-mode-key) 
     (major-mode-hydra-title-generator
         '(lambda (mode)
            (s-concat "\n"
@@ -303,7 +309,6 @@ This is a catch all column.
 #+begin_src emacs-lisp
   (with-eval-after-load 'hydra
     (with-eval-after-load 'major-mode-hydra
-      (message "Adding a shortcut column to my leader hydra")
       (pretty-hydra-define+ my/hydra-leader (:color blue)
         ("Dashboard"
          ()
@@ -311,7 +316,9 @@ This is a catch all column.
          ()
          "Misc"
          (("d" dired "Dired")
-          ("H" (find-file "~/Projects/home/emacs.org") "emacs.org"))
+          ("H" (if (eq system-type 'windows-nt)
+                    (find-file "c:/Projects/home/emacs.org")
+                  (find-file "~/Projects/home/emacs.org")) "emacs.org"))
          "Agenda / Journal"
          (("j" my/hydra-roam-dailies/body "Journal")
           ("g" org-roam-insert "Insert")
@@ -339,14 +346,12 @@ This is a catch all column.
 **** UI
 #+begin_src emacs-lisp :noweb-ref hydra-text-scale
   (with-eval-after-load 'hydra
-    (message "Defining hydra - text scale")
     (defhydra my/hydra-text-scale (:color cyan :quit-key "SPC")
       "scale text"
       ("j" text-scale-increase "in")
       ("k" text-scale-decrease "out"))
 
     (with-eval-after-load 'major-mode-hydra
-      (message "Attaching hydra to leader - text scale")
       (pretty-hydra-define+ my/hydra-leader ()
         ("Misc" (("s" (my/hydra-text-scale/body) "scale text" :color blue))))))
 #+end_src
@@ -354,7 +359,6 @@ This is a catch all column.
 **** Straight
 #+begin_src emacs-lisp :noweb-ref hydra-straight-helper
   (with-eval-after-load 'hydra
-    (message "Defining straight helper hydra")
     (defhydra hydra-straight-helper (:hint nil)
       "
       _c_heck all       |_f_etch all     |_m_erge all      |_n_ormalize all   |p_u_sh all
@@ -385,14 +389,12 @@ This is a catch all column.
       ("q" nil))
 
     (with-eval-after-load 'major-mode-hydra
-      (message "Attaching hydra to leader - straight")
       (pretty-hydra-define+ my/hydra-leader ()
         ("Tools" (("S" (hydra-straight-helper/body) "Straight" :color blue))))))
 #+end_src
 **** Global org-mode
 #+begin_src emacs-lisp
   (with-eval-after-load 'hydra
-    (message "Defining hydra - global org mode")
     (defhydra hydra-global-org (:color blue :hint nil)
       "
     Timer^^        ^Clock^         ^Capture^       ^Document^
@@ -417,16 +419,12 @@ This is a catch all column.
       ("o" org-overview))
 
     (with-eval-after-load 'major-mode-hydra
-      (message "Attaching hydra to leader - global org mode")
-      (pretty-hydra-define+ my/hydra-leader ()
-        ("Misc"
-         (("o" (hydra-global-org/body) "Org" :color blue))))))
+      (pretty-hydra-define+ my/hydra-leader () ("Misc" (("o" (hydra-global-org/body) "Org" :color blue))))))
 #+end_src
 **** Help
 This is an area that I have underexplored and look forward to unlocking more of the potential of in the future.
 #+begin_src emacs-lisp
   (with-eval-after-load 'all-the-icons
-    (message "Defining hydra - help")
     (defvar my/help--title (all-the-icons-faicon "medkit" "Help" 1 -0.05))
                                           ; C-;     iedit-mode-toggle-on-function
     (pretty-hydra-define+ my/help (:foreign-keys warn :title my/help--title :quit-key "SPC")
@@ -463,15 +461,11 @@ This is an area that I have underexplored and look forward to unlocking more of 
         ("." helpful-at-point "thing at point")
         ("d" display-local-help "Get help at point"))))
 
-    (message "Attaching hydra to leader - help")
-    (pretty-hydra-define+ my/hydra-leader ()
-      ("Misc"
-       (("h" (my/help/body) "Help" :color blue)))))
+    (pretty-hydra-define+ my/hydra-leader () ("Misc" (("h" (my/help/body) "Help" :color blue)))))
 #+end_src
 ***** Help for emacs
 #+begin_src emacs-lisp
   (with-eval-after-load 'all-the-icons
-    (message "Defining hydra - help - gnu emacs")
     (defvar my/help-gnu--title (all-the-icons-fileicon "emacs" "Help - Gnu Emacs" 1 -0.05))
 
     (pretty-hydra-define+ my/help-gnu-emacs (:foreign-keys warn :title my/help-gnu-emacs--title :quit-key "SPC")
@@ -491,10 +485,7 @@ This is an area that I have underexplored and look forward to unlocking more of 
         ("p" view-emacs-problems "Info on known emacs problems")
         ("t" view-emacs-todo "Todos"))))
 
-    (message "Attaching hydra to leader - GNU Emacs")
-    (pretty-hydra-define+ my/hydra-leader ()
-      ("Misc"
-       (("E" (my/help-gnu-emacs/body) "About Emacs" :color blue)))))
+    (pretty-hydra-define+ my/hydra-leader () ("Misc" (("E" (my/help-gnu-emacs/body) "About Emacs" :color blue)))))
 #+end_src
 ***** Help for gnu
 #+begin_src emacs-lisp
@@ -516,23 +507,6 @@ This is an area that I have underexplored and look forward to unlocking more of 
     (pretty-hydra-define+ my/hydra-leader ()
       ("Tools" (("g" (guix-popup) "Guix" :color blue)))))
 #+end_src
-**** Notes
-***** Quick Capture
-An inbox for reminders of ideas or meetings that will be processed later on, or trashed.
-
-| Add a note to a file           | org-roam-find-file        |
-| Force db cache refresh         | org-roam-db-rebuild-cache |
-| Link to another org document   | org-roam-insert           |
-| Show backlinks to current note | org-roam                  |
-| Visualize links                |                           |
-| Add tag                        |                           |
-| Add title                      |                           |
-***** Permanent Notes 
-****** Literature notes
-Brief annotations on a particular source, there's a link between the source and the note.
-****** Concept notes
-These are independent notes, they need to be self-explanatory and detailed.
-
 ** Hercules - Never need to write another hydra again!
 https://gitlab.com/jjzmajic/hercules.el
 https://github.com/abo-abo/hydra/wiki
@@ -560,7 +534,6 @@ Can evil-window-map be more hydra-like
 #+end_src
 
 * Appearance and UI modifications
-** 
 ** yes/no => y/n
 Kiss, right?
 #+begin_src emacs-lisp
@@ -627,25 +600,24 @@ Keyboard scroll one line at a time
 TIP: use describe-face org- if you think something isn't looking its best
 
 #+begin_src emacs-lisp
-    (defun my/org-apply-ui ()
-      (interactive)
-      (with-eval-after-load 'org
-        (org-indent-mode) ; indent text according to outline structure
-        ;(auto-fill-mode 0) ; don't automatically break lines exceeding current-fill-column
-        (visual-line-mode 1) ; instead of breaking lines exceeding current-fill-column, visually wrap them
+  (defun my/org-apply-ui ()
+    (interactive)
+    (with-eval-after-load 'org
+      (org-indent-mode) ; indent text according to outline structure
+      ;(auto-fill-mode 0) ; don't automatically break lines exceeding current-fill-column
+      (visual-line-mode 1) ; instead of breaking lines exceeding current-fill-column, visually wrap them
 
-        (customize-set-variable 'org-ellipsis " ➠")
-        (customize-set-variable 'org-hide-emphasis-markers t)
-        (customize-set-variable 'evil-auto-indent nil)
-        (customize-set-variable 'org-src-window-setup 'current-window
-                                "open org-src blocks in current window")
+      (customize-set-variable 'org-ellipsis " ➠")
+      (customize-set-variable 'org-hide-emphasis-markers t)
+      (customize-set-variable 'evil-auto-indent nil)
+      (customize-set-variable 'org-src-window-setup 'current-window "open org-src blocks in current window")
 
-    ;;; Replace list hyphen with dot
-        ;; (font-lock-add-keywords 'org-mode
-        ;;                         '(("^ *\\([-]\\) "
-        ;;                            (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) " "))))))
+  ;;; Replace list hyphen with dot
+      ;; (font-lock-add-keywords 'org-mode
+      ;;                         '(("^ *\\([-]\\) "
+      ;;                            (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) " "))))))
 
-        ))
+      ))
 #+end_src
 
 *** Bullets
@@ -696,12 +668,32 @@ TIP: use describe-face org- if you think something isn't looking its best
     ;(sml/apply-theme 'light-powerline)
     )
 #+end_src
-*** Move modeline to the top
+*** COMMENT Move modeline to the top
 #+begin_src emacs-lisp
-  (setq-default header-line-format mode-line-format)
+  ;(setq-default header-line-format mode-line-format)
   ;(setq-default mode-line-format nil)
   ;(setq-default header-line-format mode-line-format)
 #+end_src
+
+Fix modeline so that it uses modus theme when moved to the top
+#+begin_src emacs-lisp
+
+#+end_src
+
+** COMMENT Minibuffer
+https://github.com/raxod502/selectrum/wiki/Additional-Configuration#display-minibuffer-in-a-child-frame-with-mini-frame
+#+begin_src emacs-lisp
+  (use-package mini-frame
+    :custom
+    ((mini-frame-show-parameters ((top . 10)
+                                 (width . 0.7)
+                                 (left . 0.5))))
+
+    :config
+    (setq x-gtk-resize-child-frames 'resize-mode)
+    (mini-frame-mode +1))
+#+end_src
+
 ** Highlight
 #+begin_src emacs-lisp
 (hl-line-mode)
@@ -797,6 +789,9 @@ https://protesilaos.com/modus-themes/
     :ensure
     ;:after (moody)
     :init
+    (setq-default header-line-format mode-line-format)
+                                          ;(setq-default mode-line-format nil)
+                                          ;(setq-default header-line-format mode-line-format)
     ;; Add all you customizations priot to loading the themes
     (setq modus-themes-italit-constructs t
           modus-themes-success-deuteranopia t
@@ -865,24 +860,7 @@ https://protesilaos.com/modus-themes/
                 ("C-v" . icomplete-vertical-toggle)))
 #+end_src
 
-** COMMENT Minibuffer
-https://github.com/raxod502/selectrum/wiki/Additional-Configuration#display-minibuffer-in-a-child-frame-with-mini-frame
-#+begin_src emacs-lisp
-  (use-package mini-frame
-    :custom
-    ((mini-frame-show-parameters ((top . 10)
-                                 (width . 0.7)
-                                 (left . 0.5))))
-
-    :config
-    (setq x-gtk-resize-child-frames 'resize-mode)
-    (mini-frame-mode +1))
-#+end_src
-
-* 
-
 * Behaviour
-
 ** Incremental narrowing
 #+begin_src emacs-lisp
   (use-package selectrum
@@ -984,6 +962,12 @@ https://github.com/minad/marginalia
 #+begin_src emacs-lisp
   (use-package help-find :straight (:type git :host github :repo "emacsmirror/help-find"))
 #+end_src
+
+** helpful
+#+begin_src emacs-lisp
+  (use-package helpful)
+#+end_src
+
 * Org-mode
 #+begin_src emacs-lisp
   (use-package org
@@ -1556,6 +1540,180 @@ https://www.leonrische.me/fc/index.html
       (kbd "q") 'org-fc-review-quit))
 #+end_src
 
+* COMMENT Programming Language Support
+** Lisp
+*** Lispy
+#+begin_src emacs-lisp
+  (use-package lispy
+    :hook emacs-lisp-mode
+    :config (lispy-mode 1))
+#+end_src
+*** Lispyville
+Here are the main features of lispyville:
+
+    - Provides “safe” versions of vim’s yank, delete, and change related operators that won’t unbalance parentheses
+    - Provides lisp-related evil operators, commands, motions, and text objects
+    - Integrates evil with lispy by providing commands to more easily switch between normal state and lispy’s “special” context/mode and by providing options for integrating visual state with lispy’s special region mode
+
+Note that this package does not create any new evil states; it assumes that the user will be using lispy in insert or emacs state.
+#+begin_src emacs-lisp
+  (use-package lispyville
+    :hook lispy-mode)
+#+end_src
+*** COMMENT Handle parenthesis with style - Paredit
+Paredit makes handling lisp expressions much, much easier
+Cheatsheet: http://www.emacswiki.org/emacs/PareditCheatsheet
+#+begin_src emacs-lisp 
+  (use-package paredit
+    :delight
+    :hook ((emacs-lisp-mode
+            eval-expression-minibuffer-setup
+            ielm-mode
+            ;clojure-mode
+            lisp-mode
+            lisp-interaction-mode
+            scheme-mode
+            geiser-repl-mode) 
+           . enable-paredit-mode)) 
+#+end_src
+*** TODO COMMENT Clojure (for the brave!)
+#+begin_src emacs-lisp 
+  ;; key bindings and code colorization for Clojure
+  ;; "When several buffers visit identically-named files,
+  ;; Emacs must give the buffers distinct names. The usual method
+  ;; for making buffer names unique adds ‘<2>’, ‘<3>’, etc. to the end
+  ;; of the buffer names (all but one of them).
+  ;; The forward naming method includes part of the file's directory
+  ;; name at the beginning of the buffer name
+  ;; https://www.gnu.org/software/emacs/manual/html_node/emacs/Uniquify.html
+  ;; (use-package uniquify
+  ;; :config
+  ;; (setq uniquify-buffer-name-style 'forward))
+
+  ;; https://github.com/clojure-emacs/clojure-mode
+  ;; syntax hilighting for midje
+;  (use-package clojure-mode
+;    :delight
+;    :config
+;    (lambda ()
+;      (setq inferior-lisp-program "lein repl")
+;      (font-lock-add-keywords
+;       nil
+;       '(("(\\(facts?\\)"
+;          (1 font-lock-keyword-face))
+;         ("(\\(background?\\)"
+;          (1 font-lock-keyword-face))))
+;      (define-clojure-indent (fact 1))
+;      (define-clojure-indent (facts 1))
+;      (rainbow-delimiters-mode)))
+;
+;  ;; extra syntax highlighting for clojure
+;  (use-package clojure-mode-extra-font-locking)
+
+  ;; integration with a Clojure REPL
+  ;; https://github.com/clojure-emacs/cider
+  (use-package cider
+    :delight
+    :config
+    ;; provides minibuffer documentation for the code you're typing into the repl
+    (add-hook 'cider-mode-hook 'eldoc-mode)
+
+    ;; go right to the REPL buffer when it's finished connecting
+    (setq cider-repl-pop-to-buffer-on-connect t)
+
+    ;; When there's a cider error, show its buffer and switch to it
+    (setq cider-show-error-buffer t)
+    (setq cider-auto-select-error-buffer t)
+
+    ;; Where to store the cider history.
+    (setq cider-repl-history-file "~/.emacs.d/cider-history")
+
+    ;; Wrap when navigating history.
+    (setq cider-repl-wrap-history t)
+
+    ;; enable paredit in your REPL
+    (add-hook 'cider-repl-mode-hook 'paredit-mode)
+
+    ;; Use clojure mode for other extensions
+    (add-to-list 'auto-mode-alist '("\\.edn$" . clojure-mode))
+    (add-to-list 'auto-mode-alist '("\\.boot$" . clojure-mode))
+    (add-to-list 'auto-mode-alist '("\\.cljs.*$" . clojure-mode))
+    (add-to-list 'auto-mode-alist '("lein-env" . enh-ruby-mode))
+    ;; key bindings
+    ;; these help me out with the way I usually develop web apps
+  (defun cider-start-http-server ()
+    (interactive)
+    (cider-load-current-buffer)
+    (let ((ns (cider-current-ns)))
+      (cider-repl-set-ns ns)
+      (cider-interactive-eval (format "(println '(def server (%s/start))) (println 'server)" ns))
+      (cider-interactive-eval (format "(def server (%s/start)) (println server)" ns))))
+
+  (defun cider-refresh ()
+    (interactive)
+    (cider-interactive-eval (format "(user/reset)")))
+
+  (defun cider-user-ns ()
+    (interactive)
+    (cider-repl-set-ns "user"))
+
+  (eval-after-load 'cider
+    '(progn
+       (define-key clojure-mode-map (kbd "C-c C-v") 'cider-start-http-server)
+       (define-key clojure-mode-map (kbd "C-M-r") 'cider-refresh)
+       (define-key clojure-mode-map (kbd "C-c u") 'cider-user-ns)
+       (define-key cider-mode-map (kbd "C-c u") 'cider-user-ns))))
+#+end_src
+*** COMMENT Emacs Lisp
+#+begin_src emacs-lisp
+  (major-mode-hydra-define+ emacs-lisp-mode nil
+    ("Eval"
+     (("b" eval-buffer "buffer")
+      ("e" eval-defun "defun")
+      ("r" eval-region "region"))
+     "REPL"
+     (("I" ielm "ielm"))
+     "Test"
+     (("t" ert "prompt")
+      ("T" (ert t) "all")
+      ("F" (ert :failed) "failed"))
+     "Doc"
+     (("d" helpful-at-point "thing-at-pt")
+      ("f" describe-function "function")
+      ("v" describe-variable "variable")
+      ("i" info-lookup-symbol "info lookup"))))
+#+end_src
+*** COMMENT Scheme
+Install geiser, at the moment, I'm installing geiser-guile using guix.
+Macrostep-geiser doesn't seem to be available atm either.
+
+#+begin_src emacs-lisp
+  (use-package geiser
+    :custom
+    (geiser-font-lock-repl-prompt 'nil)
+    (geiser-font-lock-repl-input 'nil)
+    :config
+    )
+#+end_src
+** COMMENT Play nice with HTML
+Edit html like paredit
+#+begin_src emacs-lisp 
+  (use-package tagedit :delight)
+#+end_src
+
+** COMMENT EmacSQL
+https://github.com/skeeto/emacsql
+#+begin_src emacs-lisp
+  (use-package emacsql
+    :delight
+    :straight (:built-in t))
+#+end_src
+
+#+begin_src emacs-lisp
+  (use-package emacsql-sqlite
+    :delight
+    :straight (:built-in t))
+#+end_src
 * Dashboard
 https://github.com/emacs-dashboard/emacs-dashboard 
 
@@ -1694,164 +1852,6 @@ http://blog.binchen.org/posts/use-wgrep-and-evil-to-replace-text-efficiently.htm
   (use-package wgrep :delight)
 #+end_src
 
-* COMMENT Programming Language Support
-** Play nice with HTML
-Edit html like paredit
-#+begin_src emacs-lisp 
-  (use-package tagedit
-    :delight)
-#+end_src
-
-** Lisp
-*** Handle parenthesis with style - Paredit
-Paredit makes handling lisp expressions much, much easier
-Cheatsheet: http://www.emacswiki.org/emacs/PareditCheatsheet
-#+begin_src emacs-lisp 
-  (use-package paredit
-    :delight
-    :hook ((emacs-lisp-mode
-            eval-expression-minibuffer-setup
-            ielm-mode
-            ;clojure-mode
-            lisp-mode
-            lisp-interaction-mode
-            scheme-mode
-            geiser-repl-mode) 
-           . enable-paredit-mode)) 
-#+end_src
-*** TODO Clojure (for the brave!)
-#+begin_src emacs-lisp 
-  ;; key bindings and code colorization for Clojure
-  ;; "When several buffers visit identically-named files,
-  ;; Emacs must give the buffers distinct names. The usual method
-  ;; for making buffer names unique adds ‘<2>’, ‘<3>’, etc. to the end
-  ;; of the buffer names (all but one of them).
-  ;; The forward naming method includes part of the file's directory
-  ;; name at the beginning of the buffer name
-  ;; https://www.gnu.org/software/emacs/manual/html_node/emacs/Uniquify.html
-  ;; (use-package uniquify
-  ;; :config
-  ;; (setq uniquify-buffer-name-style 'forward))
-
-  ;; https://github.com/clojure-emacs/clojure-mode
-  ;; syntax hilighting for midje
-;  (use-package clojure-mode
-;    :delight
-;    :config
-;    (lambda ()
-;      (setq inferior-lisp-program "lein repl")
-;      (font-lock-add-keywords
-;       nil
-;       '(("(\\(facts?\\)"
-;          (1 font-lock-keyword-face))
-;         ("(\\(background?\\)"
-;          (1 font-lock-keyword-face))))
-;      (define-clojure-indent (fact 1))
-;      (define-clojure-indent (facts 1))
-;      (rainbow-delimiters-mode)))
-;
-;  ;; extra syntax highlighting for clojure
-;  (use-package clojure-mode-extra-font-locking)
-
-  ;; integration with a Clojure REPL
-  ;; https://github.com/clojure-emacs/cider
-  (use-package cider
-    :delight
-    :config
-    ;; provides minibuffer documentation for the code you're typing into the repl
-    (add-hook 'cider-mode-hook 'eldoc-mode)
-
-    ;; go right to the REPL buffer when it's finished connecting
-    (setq cider-repl-pop-to-buffer-on-connect t)
-
-    ;; When there's a cider error, show its buffer and switch to it
-    (setq cider-show-error-buffer t)
-    (setq cider-auto-select-error-buffer t)
-
-    ;; Where to store the cider history.
-    (setq cider-repl-history-file "~/.emacs.d/cider-history")
-
-    ;; Wrap when navigating history.
-    (setq cider-repl-wrap-history t)
-
-    ;; enable paredit in your REPL
-    (add-hook 'cider-repl-mode-hook 'paredit-mode)
-
-    ;; Use clojure mode for other extensions
-    (add-to-list 'auto-mode-alist '("\\.edn$" . clojure-mode))
-    (add-to-list 'auto-mode-alist '("\\.boot$" . clojure-mode))
-    (add-to-list 'auto-mode-alist '("\\.cljs.*$" . clojure-mode))
-    (add-to-list 'auto-mode-alist '("lein-env" . enh-ruby-mode))
-    ;; key bindings
-    ;; these help me out with the way I usually develop web apps
-  (defun cider-start-http-server ()
-    (interactive)
-    (cider-load-current-buffer)
-    (let ((ns (cider-current-ns)))
-      (cider-repl-set-ns ns)
-      (cider-interactive-eval (format "(println '(def server (%s/start))) (println 'server)" ns))
-      (cider-interactive-eval (format "(def server (%s/start)) (println server)" ns))))
-
-  (defun cider-refresh ()
-    (interactive)
-    (cider-interactive-eval (format "(user/reset)")))
-
-  (defun cider-user-ns ()
-    (interactive)
-    (cider-repl-set-ns "user"))
-
-  (eval-after-load 'cider
-    '(progn
-       (define-key clojure-mode-map (kbd "C-c C-v") 'cider-start-http-server)
-       (define-key clojure-mode-map (kbd "C-M-r") 'cider-refresh)
-       (define-key clojure-mode-map (kbd "C-c u") 'cider-user-ns)
-       (define-key cider-mode-map (kbd "C-c u") 'cider-user-ns))))
-#+end_src
-*** Emacs Lisp
-#+begin_src emacs-lisp
-  (major-mode-hydra-define+ emacs-lisp-mode nil
-    ("Eval"
-     (("b" eval-buffer "buffer")
-      ("e" eval-defun "defun")
-      ("r" eval-region "region"))
-     "REPL"
-     (("I" ielm "ielm"))
-     "Test"
-     (("t" ert "prompt")
-      ("T" (ert t) "all")
-      ("F" (ert :failed) "failed"))
-     "Doc"
-     (("d" helpful-at-point "thing-at-pt")
-      ("f" describe-function "function")
-      ("v" describe-variable "variable")
-      ("i" info-lookup-symbol "info lookup"))))
-#+end_src
-*** Scheme
-Install geiser, at the moment, I'm installing geiser-guile using guix.
-Macrostep-geiser doesn't seem to be available atm either.
-
-#+begin_src emacs-lisp
-  (use-package geiser
-    :custom
-    (geiser-font-lock-repl-prompt 'nil)
-    (geiser-font-lock-repl-input 'nil)
-    :config
-    )
-#+end_src
-
-** COMMENT EmacSQL
-https://github.com/skeeto/emacsql
-#+begin_src emacs-lisp
-  (use-package emacsql
-    :delight
-    :straight (:built-in t))
-#+end_src
-
-#+begin_src emacs-lisp
-  (use-package emacsql-sqlite
-    :delight
-    :straight (:built-in t))
-#+end_src
 * COMMENT File types
 ** PDF tools
 https://github.com/politza/pdf-tools
@@ -2031,3 +2031,4 @@ https://en.liujiacai.net/2021/05/21/emacs-package/
 http://vimdoc.sourceforge.net/htmldoc/vimindex.html#g
 https://wikemacs.org/wiki/Discoverability#Hercules.2C_joining_which-key-mode_and_Hydras
 http://trey-jackson.blogspot.com/2010/04/emacs-tip-36-abort-minibuffer-when.html
+https://github.com/ekaschalk/.spacemacs.d
