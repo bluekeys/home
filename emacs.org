@@ -1065,19 +1065,6 @@ https://github.com/minad/marginalia
        ("l" org-next-visible-heading :color red))))
     )
 #+end_src
-*** Org capture templates
-#+begin_src emacs-lisp
-  (setq org-capture-templates
-        '(("r" "Risk" table-line (file+headline (lambda () (buffer-file-name)) "Risks") "|id|%u|%?||")
-          ("a" "Assumption" table-line (file+headline (lambda () (buffer-file-name)) "Assumptions") "")
-          ("i" "Issue" table-line (file+headline (lambda () (buffer-file-name)) "Issues") "")
-          ("d" "Decision" table-line (file+headline (lambda () (buffer-file-name)) "Decisions") "")
-          ("t" "Task" entry (file+headline (lambda () (buffer-file-name)) "Tasks") "** TODO %^{Description}%?\n:LOGBOOK:\n- Added: %U\n:END:")
-          ("m" "Meeting" entry (file+headline (lambda () (buffer-file-name)) "Meeting")
-           "")
-          ))
-
-#+end_src
 ** org-roam
 https://www.orgroam.com/manual.html
 Installation
@@ -1301,6 +1288,19 @@ When I'm running those blocks, I'd like the option for them to run async
 
   (define-key org-mode-map (kbd "C-c C-v") #'org-babel-mode)
 #+end_src
+** Org capture templates
+#+begin_src emacs-lisp
+  (setq org-capture-templates
+        '(("r" "Risk" table-line (file+headline (lambda () (buffer-file-name)) "Risks") "|id|%u|%?||")
+          ("a" "Assumption" table-line (file+headline (lambda () (buffer-file-name)) "Assumptions") "")
+          ("i" "Issue" table-line (file+headline (lambda () (buffer-file-name)) "Issues") "")
+          ("d" "Decision" table-line (file+headline (lambda () (buffer-file-name)) "Decisions") "")
+          ("t" "Task" entry (file+headline (lambda () (buffer-file-name)) "Tasks") "** TODO %^{Description}%?\n:LOGBOOK:\n- Added: %U\n:END:")
+          ("m" "Meeting" entry (file+headline (lambda () (buffer-file-name)) "Meeting")
+           "")
+          ))
+
+#+end_src
 ** Agenda / Super Agenda
 *** These are the files that are used to build the agenda
 https://orgmode.org/manual/Agenda-Files.html#Agenda-Files
@@ -1375,89 +1375,6 @@ https://github.com/alphapapa/org-super-agenda/blob/master/examples.org
        (org-super-agenda-mode)
   )))
 #+end_src
-** COMMENT Re-filing
-#+begin_src emacs-lisp :noweb-ref org-refile-targets
-  (setq org-refile-targets
-        '((nil :maxlevel . 1)
-          (org-agenda-files :maxlevel .1)))
-#+end_src
-** COMMENT org-noter
-#+begin_src emacs-lisp
-  (use-package org-noter
-    :delight)
-#+end_src
-*** COMMENT Notes
-#+begin_src emacs-lisp :noweb-ref custom-org-notes :tangle no
-  (org-agenda-default-notes-file "~/org/notes")
-#+end_src
-** COMMENT Drill
-** COMMENT org-sidebar
-#+begin_src emacs-lisp
-  (use-package org-sidebar
-    :delight
-    :preface
-    (defun my/org-today-sidebar (source-buffer)
-      (let ((display-buffer
-             (generate-new-buffer (format "TODAY org-sidebar<%s>" (buffer-name source-buffer))))
-            (title (propertize (concat "Today's deadlines in: " (buffer-name source-buffer))
-                               'help-echo "Items to-do today")))
-        (with-current-buffer display-buffer
-          (setf org-sidebar-source-buffer source-buffer))
-        (save-window-excursion
-          ;; `org-ql-search' displays the buffer, but we don't want to do that here.
-          (org-ql-search source-buffer
-            '(and (not (done))
-                  (or (scheduled :to today) (deadline :to today))) ; should be scheduled today / deadline today
-	  
-            :narrow t
-            :sort '(priority date)
-            :super-groups '((:auto-todo))
-            :buffer display-buffer
-            :title title))
-        display-buffer))
-  
-    ;; (defun my/org-today-sidebar ()
-    ;; "Show my Org Today Sidebar."
-    ;; (interactive)
-    ;; (org-sidebar
-    ;; :sidebars (make-org-sidebar
-    ;; 		:name "Today"
-    ;; 		:description "Today items"
-    ;; 		:items (org-ql (org-agenda-files)
-    ;; 			(and (not (done))
-    ;; 				(or (deadline auto)
-    ;; 				    (scheduled :to today)))
-    ;; 			:action element-with-markers)
-    ;; 		:super-groups '((:time-grid t)
-    ;; 				(:name "Overdue" :scheduled past :deadline past)
-    ;; 				(:name "Due today" :scheduled today :deadline today)
-    ;; 				(:tag "bills")
-    ;; 				(:priority "A")
-    ;; 				(:name "Non-tasks"
-    ;; 					:todo nil)))))
-  
-    :custom
-    (org-sidebar-side 'left)
-    (org-sidebar-default-fns '(org-sidebar-tree-view-buffer
-                               my/org-today-sidebar
-                               org-sidebar--upcoming-items
-                               org-sidebar--todo-items))
-    :bind (([M-tab] . org-sidebar-toggle))
-                                          ; :hook (org-mode . my/org-today-sidebar)
-  )
-#+end_src
-** COMMENT Habit
-https://orgmode.org/manual/Tracking-your-habits.html
-There are 2 things needed to make a habit. 1.) Schedule a todo item with a repeater. 2.) Give the item the habit property.
-
-You can make habits visible in the org agenda using K
-
-I prefer to put all my habits into a single file.
-
-#+begin_src emacs-lisp
-  (defconst my/habitfile "~/org/habit.org")
-#+end_src
-** COMMENT Journal
 ** COMMENT org-ref
 https://github.com/jkitchin/org-ref
 ** COMMENT org-download
@@ -1470,7 +1387,133 @@ https://github.com/jkitchin/org-ref
           (("s-Y" . org-download-screenshot)
            ("s-y" . org-download-yank))))
 #+end_src
-** TODO org-webring
+** COMMENT org-webring
+* Dashboard
+https://github.com/emacs-dashboard/emacs-dashboard 
+
+This is the first thing I see when I switch on my laptop. I would like it to be very focussed.
+
+Ideally, I would see a welcome message, goals according to priority
+
+- [ ] No need for a logo
+- [ ] No need for a welcome message, but something witty, inspirational or similar might be nice
+- [ ] Goals clearly visible
+- [ ] Tasks, prioritised and visible
+- [ ] Upcoming appointments
+- [ ] Maybe emacs packages loaded in x time message
+- [ ] Maybe links to my site or github
+
+** This will show Dashboard in frames created with emacsclient -c
+#+begin_src emacs-lisp
+  (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
+#+end_src
+** Configure the dashboard
+#+begin_src emacs-lisp
+  (use-package dashboard
+    :delight
+    :custom (dashboard-page-separator "\n\n\n")
+    :config
+    (dashboard-setup-startup-hook)
+    (setq dashboard-items '((agenda . 10)))
+    (setq dashboard-set-init-info t)
+    (setq dashboard-week-agenda t)
+    (setq dashboard-org-agenda-categories '("Tasks" "Appointments"))
+    (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-time)
+    (setq dashboard-set-heading-icons t)
+    (setq dashboard-agenda-release-buffers t)
+    (setq dashboard-set-file-icons t)
+    (setq dashboard-set-footer nil)
+    (setq dashboard-startup-banner "~/Downloads/8afe1c4eaca4ed80b7123771b1c7e84f.png")
+
+    ; Code to pick a random motivational startup message from a selection stored in an org-file.
+    (defcustom dashboard-banner-logo-titles
+      '(
+        "Woooohoooo"
+        "Welcome to the jungle!"
+        "Emacs Rocks!"
+        )
+      "A list of messages, one of which dashboard chooses to display as the logo subtitle."
+      :type 'list
+      :group 'dashboard)
+
+    (setq dashboard-banner-logo-title (nth (random (1- (1+ (length dashboard-banner-logo-titles)))) dashboard-banner-logo-titles))
+
+    ;(org-roam-db-query [:select * :from nodes :where (= id "75aeefb8-8ac8-430f-b136-77c44934afad")])
+
+    ;; (("75aeefb8-8ac8-430f-b136-77c44934afad"
+    ;;   "/home/user/roam/20210828155526-motivational_quotes.org"
+    ;;   0 1 nil nil nil nil
+    ;;   "Motivational Quotes" (
+    ;; 			   ("CATEGORY" . "20210828155526-motivational_quotes")
+    ;; 			   ("ID" . "75aeefb8-8ac8-430f-b136-77c44934afad")
+    ;; 			   ("BLOCKED" . "")
+    ;; 			   ("FILE" . "/home/user/roam/20210828155526-motivational_quotes.org")
+    ;; 			   ("PRIORITY" . "B")
+    ;; 			   )
+    ;;   nil))
+
+    )
+
+#+end_src
+** Create a shortcut function to switch to the dashboard
+#+begin_src emacs-lisp
+  (defun my/dashboard-switch ()
+    "Switch to dashboard and refresh content"
+    (interactive)
+    (switch-to-buffer "*dashboard*")
+    (dashboard-refresh-buffer))
+
+  (with-eval-after-load 'general
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Dashboard" (("D" (my/dashboard-switch) "Goto *dashboard*")))))
+#+end_src
+** COMMENT Create a dashboard widget that shows un-filed captures
+#+begin_src emacs-lisp
+  (defun my/dashboard-insert-unfiled-org-captures (list-size)
+    (insert "Un-filed captures"))
+
+  (add-to-list 'dashboard-item-generators '(unfiled . my/dashboard-insert-unfiled-org-captures))
+  (add-to-list 'dashboard-items '(unfiled) t)
+
+  (dashboard-modify-heading-icons '((unfiled . "file-text")))
+#+end_src
+* Flashcards
+I'm going to try org-fc instead of org-drill for now. No particular reason.
+https://www.leonrische.me/fc/index.html
+#+begin_src emacs-lisp 
+  (use-package org-fc
+    :after hydra
+    :straight (org-fc
+               :type git
+               :repo "https://git.sr.ht/~l3kn/org-fc"
+               :files (:defaults "awk" "demo.org"))
+
+    :init
+    (setq org-fc-directories `(,my/org-roam-directory))
+    (setq org-fc-review-history-file "~/flashcard-review-history.tsv")
+
+    :config
+    (require 'org-fc-hydra)
+    (require 'org-fc-keymap-hint)
+
+    (pretty-hydra-define+ my/hydra-leader ()
+      ("Misc" (("F" org-fc-hydra/body "Flashcards" :color blue))))
+
+    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
+      (kbd "RET") 'org-fc-review-flip
+      (kbd "n") 'org-fc-review-flip
+      (kbd "s") 'org-fc-review-suspend-card
+      (kbd "q") 'org-fc-review-quit)
+
+    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
+      (kbd "a") 'org-fc-review-rate-again
+      (kbd "h") 'org-fc-review-rate-hard
+      (kbd "g") 'org-fc-review-rate-good
+      (kbd "e") 'org-fc-review-rate-easy
+      (kbd "s") 'org-fc-review-suspend-card
+      (kbd "q") 'org-fc-review-quit))
+#+end_src
+
 * leetcode
 #+begin_src emacs-lisp
   (use-package leetcode
@@ -1613,43 +1656,6 @@ https://github.com/emacsorphanage/git-gutter
   ; )
 #+end_src
 ** TODO magit-todos
-* Flashcards
-I'm going to try org-fc instead of org-drill for now. No particular reason.
-https://www.leonrische.me/fc/index.html
-#+begin_src emacs-lisp 
-  (use-package org-fc
-    :after hydra
-    :straight (org-fc
-               :type git
-               :repo "https://git.sr.ht/~l3kn/org-fc"
-               :files (:defaults "awk" "demo.org"))
-
-    :init
-    (setq org-fc-directories `(,my/org-roam-directory))
-    (setq org-fc-review-history-file "~/flashcard-review-history.tsv")
-
-    :config
-    (require 'org-fc-hydra)
-    (require 'org-fc-keymap-hint)
-
-    (pretty-hydra-define+ my/hydra-leader ()
-      ("Misc" (("F" org-fc-hydra/body "Flashcards" :color blue))))
-
-    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
-      (kbd "RET") 'org-fc-review-flip
-      (kbd "n") 'org-fc-review-flip
-      (kbd "s") 'org-fc-review-suspend-card
-      (kbd "q") 'org-fc-review-quit)
-
-    (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-rate-mode
-      (kbd "a") 'org-fc-review-rate-again
-      (kbd "h") 'org-fc-review-rate-hard
-      (kbd "g") 'org-fc-review-rate-good
-      (kbd "e") 'org-fc-review-rate-easy
-      (kbd "s") 'org-fc-review-suspend-card
-      (kbd "q") 'org-fc-review-quit))
-#+end_src
-
 * COMMENT Programming Language Support
 ** Lisp
 *** Lispy
@@ -1823,95 +1829,6 @@ https://github.com/skeeto/emacsql
   (use-package emacsql-sqlite
     :delight
     :straight (:built-in t))
-#+end_src
-* Dashboard
-https://github.com/emacs-dashboard/emacs-dashboard 
-
-This is the first thing I see when I switch on my laptop. I would like it to be very focussed.
-
-Ideally, I would see a welcome message, goals according to priority
-
-- [ ] No need for a logo
-- [ ] No need for a welcome message, but something witty, inspirational or similar might be nice
-- [ ] Goals clearly visible
-- [ ] Tasks, prioritised and visible
-- [ ] Upcoming appointments
-- [ ] Maybe emacs packages loaded in x time message
-- [ ] Maybe links to my site or github
-
-** This will show Dashboard in frames created with emacsclient -c
-#+begin_src emacs-lisp
-  (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))
-#+end_src
-** Configure the dashboard
-#+begin_src emacs-lisp
-  (use-package dashboard
-    :delight
-    :custom (dashboard-page-separator "\n\n\n")
-    :config
-    (dashboard-setup-startup-hook)
-    (setq dashboard-items '((agenda . 10)))
-    (setq dashboard-set-init-info t)
-    (setq dashboard-week-agenda t)
-    (setq dashboard-org-agenda-categories '("Tasks" "Appointments"))
-    (setq dashboard-filter-agenda-entry 'dashboard-filter-agenda-by-time)
-    (setq dashboard-set-heading-icons t)
-    (setq dashboard-agenda-release-buffers t)
-    (setq dashboard-set-file-icons t)
-    (setq dashboard-set-footer nil)
-    (setq dashboard-startup-banner "~/Downloads/8afe1c4eaca4ed80b7123771b1c7e84f.png")
-
-    ; Code to pick a random motivational startup message from a selection stored in an org-file.
-    (defcustom dashboard-banner-logo-titles
-      '(
-        "Woooohoooo"
-        "Welcome to the jungle!"
-        "Emacs Rocks!"
-        )
-      "A list of messages, one of which dashboard chooses to display as the logo subtitle."
-      :type 'list
-      :group 'dashboard)
-
-    (setq dashboard-banner-logo-title (nth (random (1- (1+ (length dashboard-banner-logo-titles)))) dashboard-banner-logo-titles))
-
-    ;(org-roam-db-query [:select * :from nodes :where (= id "75aeefb8-8ac8-430f-b136-77c44934afad")])
-
-    ;; (("75aeefb8-8ac8-430f-b136-77c44934afad"
-    ;;   "/home/user/roam/20210828155526-motivational_quotes.org"
-    ;;   0 1 nil nil nil nil
-    ;;   "Motivational Quotes" (
-    ;; 			   ("CATEGORY" . "20210828155526-motivational_quotes")
-    ;; 			   ("ID" . "75aeefb8-8ac8-430f-b136-77c44934afad")
-    ;; 			   ("BLOCKED" . "")
-    ;; 			   ("FILE" . "/home/user/roam/20210828155526-motivational_quotes.org")
-    ;; 			   ("PRIORITY" . "B")
-    ;; 			   )
-    ;;   nil))
-
-    )
-
-#+end_src
-** Create a shortcut function to switch to the dashboard
-#+begin_src emacs-lisp
-  (defun my/dashboard-switch ()
-    "Switch to dashboard and refresh content"
-    (interactive)
-    (switch-to-buffer "*dashboard*")
-    (dashboard-refresh-buffer))
-
-  (with-eval-after-load 'general
-    (pretty-hydra-define+ my/hydra-leader ()
-      ("Dashboard" (("D" (my/dashboard-switch) "Goto *dashboard*")))))
-#+end_src
-** COMMENT Create a dashboard widget that shows un-filed captures
-#+begin_src emacs-lisp
-  (defun my/dashboard-insert-unfiled-org-captures (list-size)
-    (insert "Un-filed captures"))
-
-  (add-to-list 'dashboard-item-generators '(unfiled . my/dashboard-insert-unfiled-org-captures))
-  (add-to-list 'dashboard-items '(unfiled) t)
-
-  (dashboard-modify-heading-icons '((unfiled . "file-text")))
 #+end_src
 * COMMENT Improve help by including contextual info
 ** Helpful
