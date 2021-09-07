@@ -1028,14 +1028,11 @@ https://github.com/minad/marginalia
     :straight (:type built-in)
     :after (all-the-icons major-mode-hydra)
     :config
-    (setq org-log-into-drawer t)
     (require 'ox-org)
     (require 'org-habit)
+    (setq org-log-into-drawer t)
     :custom
     (org-catch-invisible-edits 'smart)
-    <<custom-org-babel>>
-    <<custom-org-diary>>
-    <<custom-org-notes>>
     :preface
     (defun my/org-mode-setup ()
       (my/org-apply-ui)
@@ -1072,16 +1069,16 @@ Installation
   (use-package org-roam
     :custom 
     (org-roam-directory my/org-roam-directory)
-    (org-roam-capture-templates my/org-roam-capture-templates)
+    (org-roam-templates-directory my/org-roam-templates)
 
     :init
+    (require 'org-roam)
     (setq org-roam-v2-ack t)
 
-    :hook
-    (after-init . org-roam-mode)
-
     :config
-    (org-roam-setup))
+    ;(org-roam-db-autosync-mode)
+    (org-roam-db-sync)
+    )
 #+end_src
 *** Templates
 - [ ] https://takeonrules.com/2020/12/08/revisiting-hydra-menu-for-org-roam-lookup-in-emacs/
@@ -1092,7 +1089,6 @@ I can either use org-capture (org)Capture
 or, (org-roam)Daily-notes
 Either way, this will be an inbox for processing later. In a gtd sense.
 I'm going to lean towards using org-roam for things like capture templates.
-
 
 #+begin_src emacs-lisp
   (defvar my/org-roam-capture-templates
@@ -1160,94 +1156,102 @@ Projects make use of :DEADLINE and :SCHEDULED: properties, they are captured in 
 #+begin_src emacs-lisp
   (setq org-confirm-babel-evaluate nil)
 #+end_src
-*** Plantuml
+*** Languages
+I'd like to be able to see results from shell scripts etc. in my org buffers
+**** awk
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+    (add-to-list 'org-src-lang-modes '("awk" . awk))
+    (org-babel-do-load-languages 'org-babel-load-languages '((awk . t))))
+#+end_src
+**** C / C++ / D
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+    (add-to-list 'org-src-lang-modes '("C" . c))
+    (org-babel-do-load-languages 'org-babel-load-languages '((C . t))))
+#+end_src
+**** Ditaa
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("ditaa" . ditaa))
+  (org-babel-do-load-languages 'org-babel-load-languages '((ditaa . t))))
+#+end_src
+**** Dot
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("dot" . dot))
+  (org-babel-do-load-languages 'org-babel-load-languages '((dot . t))))
+#+end_src
+**** eLisp
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("elisp" . elisp))
+  (org-babel-do-load-languages 'org-babel-load-languages '((emacs-lisp . t))))
+#+end_src
+**** Java
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("java" . java))
+  (org-babel-do-load-languages 'org-babel-load-languages '((java . t))))
+#+end_src
+**** COMMENT Javascript
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("javascript" . javascript))
+  (org-babel-do-load-languages 'org-babel-load-languages '((Javascript . t))))
+#+end_src
+**** Lisp
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("lisp" . lisp))
+  (org-babel-do-load-languages 'org-babel-load-languages '((lisp . t))))
+#+end_src
+**** Python
+#+begin_src emacs-lisp
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("python" . python))
+  (org-babel-do-load-languages 'org-babel-load-languages '((python . t))))
+#+end_src
+**** Plantuml
 #+begin_src emacs-lisp
   (use-package plantuml-mode
     :after org
     :config
-    (setq org-plantuml-jar-path (expand-file-name "/home/user/.guix-profile/bin/plantuml"))
+    (if (not (eq 'system-type 'windows-nt))
+        (setq org-plantuml-jar-path (expand-file-name "/home/user/.guix-profile/bin/plantuml")))
     (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
     (org-babel-do-load-languages 'org-babel-load-languages '((plantuml . t)))
   )
 #+end_src
-*** Languages
-I'd like to be able to see results from shell scripts etc. in my org buffers
-#+begin_src emacs-lisp :noweb-ref custom-org-babel :tangle no
-#+end_src
-**** awk
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((Awk . t)))
-#+end_src
-**** C / C++ / D
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((C . t)))
-#+end_src
-**** Ditaa
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((ditaa . t)))
-#+end_src
-**** Dot
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((dot . t)))
-#+end_src
-**** eLisp
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((emacs-lisp . t)))
-#+end_src
-**** Java
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((java . t)))
-#+end_src
-**** COMMENT Javascript
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((Javascript . t)))
-#+end_src
-**** Lisp
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((lisp . t)))
-#+end_src
-**** Python
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((python . t)))
-#+end_src
-**** plantuml
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((plantuml . t)))
-#+end_src
 **** Ruby
 #+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((ruby . t)))
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("ruby" . ruby))
+  (org-babel-do-load-languages 'org-babel-load-languages '((ruby . t))))
 #+end_src
 **** SQL
 #+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((sql . t)))
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("sql" . sql))
+  (org-babel-do-load-languages 'org-babel-load-languages '((sql . t))))
 #+end_src
 **** Sqlite
 #+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((sqlite . t)))
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("sqlite" . sqlite))
+  (org-babel-do-load-languages 'org-babel-load-languages '((sqlite . t))))
 #+end_src
 **** Scheme
 #+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((scheme . t)))
+  (with-eval-after-load 'org
+  (add-to-list 'org-src-lang-modes '("scheme" . scheme))
+  (org-babel-do-load-languages 'org-babel-load-languages '((scheme . t))))
 #+end_src
 **** Shell
 #+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages '((shell . t)))
+  (with-eval-after-load 'org
+    (add-to-list 'org-src-lang-modes '("shell" . shell))
+    (org-babel-do-load-languages 'org-babel-load-languages '((shell . t))))
 #+end_src
 *** Templates
 Org mode template keywords, like 
