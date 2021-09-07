@@ -1072,8 +1072,8 @@ Installation
     (org-roam-templates-directory my/org-roam-templates)
 
     :init
-    (require 'org-roam)
     (setq org-roam-v2-ack t)
+    (require 'org-roam)
 
     :config
     ;(org-roam-db-autosync-mode)
