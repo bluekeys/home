@@ -1,6 +1,6 @@
 #+TITLE: Emacs Config
-#+PROPERTY: header-args            :noweb no-export :comments both :results silent :mkdirp no 
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el 
+#+PROPERTY: header-args            :noweb no-export :comments both :results silent :mkdirp no 
 
 * A explanation of how it all works
 Distraction-free, goal-driven, task-oriented.
@@ -13,7 +13,6 @@ When working on a TODO item in a project, a perspective should be created. Org's
 The use of perspectives in this way should help roll-up all the tasks created by a "yak shaving" expedition, particularly when perspectives are sorted by created.
 
 The README document in each project should contain a backlog heading.
-
 E.g. I have an idea, I want to ensure that posframes are used for all hydras. I want to ensure that all text is visible in all hydras, which in the case of C-h, doesn't appear to be true. I also want to ensure that the C-spc / spc hydra is a posframe.
 
 I should record the ideas, using org-capture. I should then refile those ideas into the relevant areas of the config.
@@ -290,7 +289,7 @@ As I use use-package, I can use the :mode-hydra keyword to create major mode hyd
   (use-package major-mode-hydra
     :demand t ; without this, :major-mode won't reliably work for use-package definitions
     :custom
-    (major-mode-hydra-invisible-quit-key 'my/major-mode-key) 
+    (major-mode-hydra-invisible-quit-key "SPC") 
     (major-mode-hydra-title-generator
         '(lambda (mode)
            (s-concat "\n"
@@ -668,16 +667,70 @@ TIP: use describe-face org- if you think something isn't looking its best
     ;(sml/apply-theme 'light-powerline)
     )
 #+end_src
-*** COMMENT Move modeline to the top
+*** Move modeline to the top
 #+begin_src emacs-lisp
-  ;(setq-default header-line-format mode-line-format)
-  ;(setq-default mode-line-format nil)
-  ;(setq-default header-line-format mode-line-format)
+  (setq-default header-line-format mode-line-format)
+  (setq-default mode-line-format nil)
+  ; (setq-default header-line-format mode-line-format)
+  ;(custom-set-faces header-line-format t :inherit mode-line-format)
+#+end_src
+
+Hook window change and copy mode-line face to header-line
+#+begin_src emacs-lisp
+  (defun header-line-update-face (window)
+    "Update the `header-line' face in WINDOW to indicate whether the window is selected."
+    (with-current-buffer (window-buffer window)
+      (if (eq (current-buffer) (window-buffer (selected-window)))
+          (progn
+              (set-face-attribute 'header-line nil :inherit 'mode-line)
+              ;(set-face-attribute 'header-line nil :inherit 'mode-line-active)
+              ;(set-face-attribute 'header-line nil :inherit 'mode-line)
+              ;(set-face-attribute 'header-line nil :inherit 'mode-line)
+            )
+        (progn
+              (set-face-attribute 'header-line nil :inherit 'mode-line-inactive)
+          )))
+
+    )
 #+end_src
 
 Fix modeline so that it uses modus theme when moved to the top
 #+begin_src emacs-lisp
+  (defun my-modus-themes-custom-faces ()
+    (set-face-attribute 'header-line nil :inherit 'mode-line)
+                                          ;(set-face-attribute 'header-line-buffer-id nil :inherit 'mode-line-buffer-id)
+                                          ;(set-face-attribute 'header-line-emphasis nil :inherit 'mode-line-emphasis)
+                                          ;(set-face-attribute 'header-line-highlight nil :inherit 'mode-line-highlight)
+                                          ;(set-face-attribute 'header-line-inactive nil :inherit 'mode-line-inactive)
+    )
 
+  (add-hook 'modus-themes-after-load-theme-hook #'my-modus-themes-custom-faces)
+
+  ;; (defvar my/selected-win nil)
+
+  ;; (defun apply-modeline-face-to-header-line (windows)
+  ;;   (when (not (minibuffer-window-active-p (frame-selected-window)))
+  ;;       (setq my/selected-win (selected-window))))
+
+  ;; (add-function :before pre-redisplay-function #'apply-modeline-face-to-header-line)
+
+  ;; `(mode-line ((,class ,@(modus-themes--variable-pitch-ui)
+  ;;                      ,@(modus-themes--mode-line-attrs
+  ;;                         fg-active bg-active
+  ;;                         fg-dim bg-active
+  ;;                         fg-main bg-active-accent
+  ;;                         fg-alt bg-active
+  ;;                         'alt-style bg-main))))
+  ;; `(mode-line-buffer-id ((,class :inherit bold)))
+  ;; `(mode-line-emphasis ((,class :inherit bold :foreground ,blue-active)))
+  ;; `(mode-line-highlight ((,class :inherit modus-themes-active-blue
+  ;;                            :box (:line-width -1 :style pressed-button))))
+  ;; `(mode-line-inactive ((,class ,@(modus-themes--variable-pitch-ui)
+  ;;                               ,@(modus-themes--mode-line-attrs
+  ;;                                  fg-inactive bg-inactive
+  ;;                                  fg-alt bg-dim
+  ;;                                  fg-inactive bg-inactive
+  ;;                                  bg-region bg-active))))
 #+end_src
 
 ** COMMENT Minibuffer
@@ -1133,24 +1186,81 @@ Projects make use of :DEADLINE and :SCHEDULED: properties, they are captured in 
 *** Languages
 I'd like to be able to see results from shell scripts etc. in my org buffers
 #+begin_src emacs-lisp :noweb-ref custom-org-babel :tangle no
-  (setq org-babel-load-languages
-   '(
-     ;; (Awk . t)
-     ;; (C . t)
-     ;; (Ditaa . t)
-     ;; (Dot . t)
-     (emacs-lisp . t)
-     ;; (Java . t)
-     ;; (Javascript . t)
-     ;; (Lisp . t)
-     ;; (Python . t)
-     (plantuml . t)
-     ;; (Ruby . t)
-     ;; (Scheme . t)
-     (shell . t)
-     ;; (SQL . t)
-     ;; (Sqlite . t)
-     ))
+#+end_src
+**** awk
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((Awk . t)))
+#+end_src
+**** C / C++ / D
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((C . t)))
+#+end_src
+**** Ditaa
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((ditaa . t)))
+#+end_src
+**** Dot
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((dot . t)))
+#+end_src
+**** eLisp
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((emacs-lisp . t)))
+#+end_src
+**** Java
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((java . t)))
+#+end_src
+**** COMMENT Javascript
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((Javascript . t)))
+#+end_src
+**** Lisp
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((lisp . t)))
+#+end_src
+**** Python
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((python . t)))
+#+end_src
+**** plantuml
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((plantuml . t)))
+#+end_src
+**** Ruby
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((ruby . t)))
+#+end_src
+**** SQL
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((sql . t)))
+#+end_src
+**** Sqlite
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((sqlite . t)))
+#+end_src
+**** Scheme
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((scheme . t)))
+#+end_src
+**** Shell
+#+begin_src emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages '((shell . t)))
 #+end_src
 *** Templates
 Org mode template keywords, like 
