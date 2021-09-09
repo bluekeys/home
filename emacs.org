@@ -309,36 +309,41 @@ This is a catch all column.
   (with-eval-after-load 'hydra
     (with-eval-after-load 'major-mode-hydra
       (pretty-hydra-define+ my/hydra-leader (:color blue)
-        ("Dashboard"
-         ()
-         "Tools"
-         ()
+        ("Tools" (("D" dired "Dired"))
          "Misc"
-         (("d" dired "Dired")
-          ("H" (if (eq system-type 'windows-nt)
-                    (find-file "c:/Projects/home/emacs.org")
-                  (find-file "~/Projects/home/emacs.org")) "emacs.org"))
-         "Agenda / Journal"
-         (("j" my/hydra-roam-dailies/body "Journal")
-          ("g" org-roam-insert "Insert")
-          ("g" org-roam-graph "Graph")
-          ("c" org-roam-capture "Capture")
+         (("h" (if (eq system-type 'windows-nt)
+                   (find-file "c:/Projects/home/emacs.org")
+                 (find-file "~/Projects/home/emacs.org")) "emacs.org"))
+         "Roam"
+         (("g" org-roam-graph "Graph")
+          ("r" org-roam-buffer-toggle "Roam buffer toggle")
+          ("i" org-roam-node-insert "Insert")
+          ("j" my/hydra-capture/body "Capture daily")
+          ("J" my/hydra-daily/body "Review daily")
+                                          ;("j" my/hydra-roam-dailies/body "Journal")
+                                          ;("c" org-roam-capture "Capture")
           ("f" org-roam-node-find "Find"))))))
 #+end_src
 
+***** Capture daily
 #+begin_src emacs-lisp
-  (defhydra my/hydra-roam-dailies (:color blue)
-    "Daily journal"
-    ("n" org-roam-dailies-capture-today "Today" :column "Capture")
-    ("v" org-roam-dailies-capture-date "Date" :column "Capture")
-    ("d" org-roam-dailies-goto-today "Today" :column "Goto" :color pink)
-    ("f" org-roam-dailies-goto-next-note "Next note" :column "Goto" :color pink)
-    ("b" org-roam-dailies-goto-previous-note "Previous note" :column "Goto" :color pink)
-    ("t" org-roam-dailies-goto-tomorrow "Tomorrow" :column "Goto" :color pink)
-    ("y" org-roam-dailies-goto-yesterday "Yesterday" :column "Goto" :color pink)
+  (defhydra my/hydra-capture (:color blue)
+    "Capture"
+    ("j" org-roam-dailies-capture-today "Today" :column "Capture")
+    ("d" org-roam-dailies-capture-date "Date" :column "Capture"))
+#+end_src
+
+***** Review dailies
+#+begin_src emacs-lisp
+  (defhydra my/hydra-daily (:color blue)
+    "Review Daily Notes"
+    ("J" org-roam-dailies-goto-today "Today" :column "Goto" :color pink)
+    ("k" org-roam-dailies-goto-next-note "Next note" :column "Goto" :color pink)
+    ("j" org-roam-dailies-goto-previous-note "Previous note" :column "Goto" :color pink)
+    ("l" org-roam-dailies-goto-tomorrow "Tomorrow" :column "Goto" :color pink)
+    ("h" org-roam-dailies-goto-yesterday "Yesterday" :column "Goto" :color pink)
     ("." org-roam-dailies-find-directory "Dailies dir" :column "Goto")
-    ("c" org-roam-dailies-goto-date "Date" :column "Goto")
-  )
+    ("d" org-roam-dailies-goto-date "Date" :column "Goto"))
 
 #+end_src
 
@@ -420,7 +425,7 @@ This is a catch all column.
     (with-eval-after-load 'major-mode-hydra
       (pretty-hydra-define+ my/hydra-leader () ("Misc" (("o" (hydra-global-org/body) "Org" :color blue))))))
 #+end_src
-**** Help
+**** COMMENT Help
 This is an area that I have underexplored and look forward to unlocking more of the potential of in the future.
 #+begin_src emacs-lisp
   (with-eval-after-load 'all-the-icons
@@ -1067,6 +1072,7 @@ https://www.orgroam.com/manual.html
 Installation
 #+begin_src emacs-lisp
   (use-package org-roam
+    :after org
     :custom 
     (org-roam-directory my/org-roam-directory)
     (org-roam-templates-directory my/org-roam-templates)
@@ -1076,8 +1082,9 @@ Installation
     (require 'org-roam)
 
     :config
+    (org-roam-setup)
     ;(org-roam-db-autosync-mode)
-    (org-roam-db-sync)
+    ;(org-roam-db-sync)
     )
 #+end_src
 *** Templates
@@ -1469,7 +1476,7 @@ Ideally, I would see a welcome message, goals according to priority
 
   (with-eval-after-load 'general
     (pretty-hydra-define+ my/hydra-leader ()
-      ("Dashboard" (("D" (my/dashboard-switch) "Goto *dashboard*")))))
+      ("Tools" (("d" (my/dashboard-switch) "Goto *dashboard*")))))
 #+end_src
 ** COMMENT Create a dashboard widget that shows un-filed captures
 #+begin_src emacs-lisp
@@ -1501,7 +1508,7 @@ https://www.leonrische.me/fc/index.html
     (require 'org-fc-keymap-hint)
 
     (pretty-hydra-define+ my/hydra-leader ()
-      ("Misc" (("F" org-fc-hydra/body "Flashcards" :color blue))))
+      ("Tools" (("F" org-fc-hydra/body "Flashcards" :color blue))))
 
     (evil-define-minor-mode-key '(normal insert emacs) 'org-fc-review-flip-mode
       (kbd "RET") 'org-fc-review-flip
